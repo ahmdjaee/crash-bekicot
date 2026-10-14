@@ -1,0 +1,101 @@
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#0b1020;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:#fff;user-select:none}
+#game-wrap{position:fixed;inset:0}
+#start-overlay{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(5,8,20,.72);cursor:pointer}
+#start-overlay button{font-size:24px;padding:20px 40px;animation:enterpulse 1.2s ease-in-out infinite}
+@keyframes enterpulse{50%{transform:scale(1.06)}}
+#game{position:absolute;inset:0;width:100%;height:100%;display:block}
+#minimap{position:absolute;right:12px;bottom:12px;width:150px;height:150px;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.25);border-radius:12px;z-index:5;display:none}
+.hidden{display:none!important}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:12px;background:radial-gradient(ellipse at center,rgba(20,30,70,.92),rgba(5,8,20,.96));z-index:20;text-align:center;padding:20px;overflow-y:auto}
+.screen h2{font-size:34px;color:#ffd23f}
+button{background:#ff5a2a;border:none;color:#fff;font-weight:800;font-size:18px;padding:14px 28px;border-radius:14px;cursor:pointer;box-shadow:0 4px 0 #a32e00}
+button:active{transform:translateY(3px);box-shadow:none}
+button.ghost{background:#2a3568;box-shadow:0 4px 0 #141a3a}
+button.small{font-size:14px;padding:9px 20px}
+#diff-list button,.track-card,.char-card,button{transition:transform .08s}
+
+/* ===== menu utama ===== */
+.menu-split{display:flex;gap:30px;align-items:center;justify-content:center;width:min(1020px,96vw);max-height:100%}
+.menu-hero{display:flex;flex-direction:column;align-items:center;gap:10px;flex:0 0 auto}
+#char-preview{width:min(300px,64vw);height:auto;border-radius:14px;background:radial-gradient(ellipse at 50% 75%,rgba(124,252,0,.12),rgba(0,0,0,.25));touch-action:pan-y}
+#char-stats{width:min(240px,60vw);display:flex;flex-direction:column;gap:4px}
+.stat{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800}
+.stat span{width:28px;text-align:left;opacity:.75}
+.pips{display:flex;gap:3px;flex:1}
+.pips i{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.15)}
+.pips i.on{background:#7CFC00}
+.menu-panel{display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;min-width:0;max-width:470px}
+.menu-panel h1{font-size:clamp(30px,4vw,46px);line-height:1;font-weight:900;letter-spacing:1px;color:#ffd23f;text-shadow:0 3px 0 #b35400,0 6px 18px rgba(0,0,0,.6);font-style:italic;white-space:nowrap}
+.carousel{display:flex;align-items:center;gap:8px;width:100%}
+.car-arrow{background:#2a3568;border:none;color:#fff;font-weight:900;font-size:18px;padding:12px 14px;border-radius:12px;cursor:pointer;box-shadow:0 4px 0 #141a3a;flex:0 0 auto}
+.car-arrow:active{transform:translateY(3px);box-shadow:none}
+.car-view{overflow:hidden;flex:1;min-width:0;border-radius:14px;touch-action:pan-y;cursor:grab}
+.car-track{display:flex;transition:transform .28s ease}
+.car-track .char-card{flex:0 0 100%;width:100%}
+.char-card{padding:10px 12px;min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:14px;background:#1a2450;border:2px solid transparent;cursor:pointer}
+.char-card.active{border-color:#7CFC00;background:#243167}
+.char-card.locked{opacity:.55;filter:grayscale(.8)}
+.char-card b{font-size:16px}
+.char-card span{font-size:11px;opacity:.8}
+.car-dots{display:flex;gap:8px}
+.car-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer}
+.car-dots i.on{background:#7CFC00}
+.tracks{display:flex;gap:8px;width:100%;justify-content:center}
+.track-card{flex:1;min-width:0;max-width:170px;padding:8px 6px;border-radius:12px;background:#1a2450;border:2px solid transparent;cursor:pointer}
+.track-card.active{border-color:#ffd23f;background:#243167}
+.track-card .thumb{font-size:26px}
+.track-card b{display:block;font-size:13px}
+.track-card .tdesc{display:block;font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-card .tbest{display:block;font-size:11px;color:#ffd23f;font-weight:800;margin-top:2px}
+#diff-list{display:flex;background:rgba(255,255,255,.06);border-radius:12px;padding:4px;gap:4px}
+#diff-list button{background:transparent;color:#fff;border:none;box-shadow:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:14px}
+#diff-list button.active{background:#243167;box-shadow:inset 0 0 0 2px #ffd23f}
+#btn-start{width:100%}
+#help ul{text-align:left;max-width:560px;line-height:1.7;background:rgba(255,255,255,.06);padding:18px 22px;border-radius:14px}
+.blue{color:#3fb6ff;font-weight:800}.orange{color:#ff9f1c;font-weight:800}.purple{color:#c26bff;font-weight:800}
+
+/* ===== HUD & game ===== */
+#hud{position:absolute;inset:0;pointer-events:none;z-index:10}
+#hud-top{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center}
+#hud-lap,#hud-pos,#hud-time{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);padding:8px 16px;border-radius:12px;font-weight:900;font-size:18px}
+#hud-pos{color:#ffd23f;font-size:22px}
+#hud-item{position:absolute;left:12px;bottom:12px;width:84px;height:84px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.3);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#hud-item.has-item{border-color:#ffd23f;animation:slotglow 1s ease-in-out infinite}
+@keyframes slotglow{0%,100%{box-shadow:0 0 0 rgba(255,210,63,0)}50%{box-shadow:0 0 18px rgba(255,210,63,.9)}}
+#hud-item-icon{font-size:36px}#hud-item-key{font-size:11px;opacity:.7}
+#boost-meter{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:min(420px,60vw);height:22px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden}
+#boost-fill{height:100%;width:0%;background:#3fb6ff}
+#boost-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;letter-spacing:2px}
+#hud-msg{position:absolute;top:22%;width:100%;text-align:center;font-size:42px;font-weight:900;color:#ffd23f;text-shadow:0 3px 0 #000;opacity:0;transition:opacity .2s}
+#wrongway{position:absolute;top:15%;width:100%;text-align:center;font-size:46px;font-weight:900;color:#ff4444;text-shadow:0 3px 0 #000;animation:wwblink .5s steps(2) infinite}
+#wrongway small{display:block;font-size:20px;color:#fff}
+@keyframes wwblink{50%{opacity:.3}}
+#countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:900;color:#ffd23f;text-shadow:0 6px 0 #000;z-index:15;pointer-events:none}
+#result-rows{display:flex;flex-direction:column;gap:6px;min-width:300px}
+#result-rows .rrow{background:rgba(255,255,255,.08);padding:8px 16px;border-radius:10px;display:flex;justify-content:space-between;font-weight:700}
+#result-rows .rrow.me{background:rgba(255,210,63,.2);border:1px solid #ffd23f}
+#result h2{animation:rbounce .6s ease}
+@keyframes rbounce{0%{transform:scale(.3) rotate(-8deg)}60%{transform:scale(1.15) rotate(3deg)}100%{transform:scale(1)}}
+#confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:30}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .4s;z-index:40}
+.confetti-piece{position:absolute;top:-16px;width:10px;height:14px;opacity:.95;animation-name:cfall;animation-timing-function:linear;animation-fill-mode:forwards}
+@keyframes cfall{to{transform:translate(var(--sw,0px),110vh) rotate(720deg)}}
+#touch-controls{display:none}
+
+/* ===== layar kecil ===== */
+@media (pointer:coarse){
+  #touch-controls{display:flex;position:absolute;bottom:70px;width:100%;justify-content:space-between;padding:0 14px;pointer-events:auto}
+  .touch-left,.touch-right{display:flex;gap:10px}
+  #touch-controls button{font-size:20px;padding:16px 20px;opacity:.85}
+  #minimap{width:110px;height:110px;bottom:auto;top:70px}
+}
+@media (max-width:860px){
+  .menu-split{flex-direction:column;gap:8px;overflow-y:auto;overflow-x:hidden}
+  .menu-panel{width:100%;max-width:100%}
+  .menu-panel h1{white-space:normal;font-size:28px}
+  #char-preview{width:190px}
+  #char-stats{width:200px}
+  .menu-panel h1{font-size:30px}
+  .track-card .tdesc{display:none}
+}

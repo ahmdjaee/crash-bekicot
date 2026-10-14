@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crash Bekicot — Balapan Offline</title>
+<link rel="stylesheet" href="style.css?v=31">
+</head>
+<body>
+<div id="game-wrap">
+  <div id="start-overlay"><button id="btn-enter">🎵 KLIK UNTUK MULAI</button></div>
+  <canvas id="game"></canvas>
+  <canvas id="minimap" width="170" height="170"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="hud-top">
+      <div id="hud-lap">LAP 1/3</div>
+      <div id="hud-pos">4th</div>
+      <div id="hud-time">0:00.0</div>
+    </div>
+    <div id="hud-item"><span id="hud-item-icon">?</span><small id="hud-item-key">E: pakai</small></div>
+    <div id="boost-meter"><div id="boost-fill"></div><span id="boost-label">DRIFT</span></div>
+    <div id="hud-msg"></div>
+    <div id="wrongway" class="hidden">↩ SALAH ARAH!<small>PUTAR BALIK!</small></div>
+    <div id="touch-controls">
+      <div class="touch-left">
+        <button id="t-left">◀</button>
+        <button id="t-right">▶</button>
+      </div>
+      <div class="touch-right">
+        <button id="t-brake">REM</button>
+        <button id="t-drift">DRIFT</button>
+        <button id="t-item">ITEM</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="countdown" class="hidden">3</div>
+  <div id="confetti" class="hidden"></div>
+  <div id="fade"></div>
+
+  <div id="menu" class="screen">
+    <div class="menu-split">
+      <div class="menu-hero">
+        <canvas id="char-preview" width="320" height="340"></canvas>
+        <div id="char-stats"></div>
+      </div>
+      <div class="menu-panel">
+        <h1>🐌 CRASH BEKICOT</h1>
+        <div class="carousel" id="char-carousel">
+          <button class="car-arrow" id="char-prev">◀</button>
+          <div class="car-view" id="char-view"><div class="car-track" id="char-list"></div></div>
+          <button class="car-arrow" id="char-next">▶</button>
+        </div>
+        <div class="car-dots" id="char-dots"></div>
+        <div class="tracks" id="track-list"></div>
+        <div id="diff-list">
+          <button data-diff="easy">Santai</button>
+          <button data-diff="normal" class="active">Seru</button>
+          <button data-diff="hard">Ngamuk</button>
+        </div>
+        <button id="btn-start">🏁 MULAI BALAPAN</button>
+        <div class="row small" id="hub-stats"></div>
+        <button id="btn-roam" class="ghost">🗺️ JELAJAHI PULAU</button>
+        <button id="btn-help" class="ghost small">❓ Cara main</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="help" class="screen hidden">
+    <h2>Cara Main</h2>
+    <ul>
+      <li>🏁 <b>Start boost:</b> tahan GAS saat hitungan 1, lepas pas GO!</li>
+      <li>💨 <b>Drift CTR:</b> sambil belok, TAHAN SPASI + setir balik (counter-steer) biar tidak muter. Makin lama makin panas: <span class="blue">biru</span> → <span class="orange">oranye</span> → <span class="purple">ungu</span>. Lepas SPASI = BOOST!</li>
+      <li>📦 Tabrak kotak ? untuk dapat item: Boost, Misil, Minyak, Perisai.</li>
+      <li>🛡️ Perisai menahan 1 serangan. Misil bisa dihindari dengan drift tajam di tikungan.</li>
+      <li>🔵 Turbo pad biru = boost gratis. Jangan nabrak dinding, muter balik itu malu.</li>
+    </ul>
+    <button id="btn-back">← Kembali</button>
+  </div>
+
+  <div id="pause" class="screen hidden">    <h2>JEDA</h2>
+    <button id="btn-resume">▶ Lanjut</button>
+    <button id="btn-restart2" class="ghost">↻ Ulangi</button>
+    <button id="btn-quit" class="ghost">🏠 Menu</button>
+  </div>
+
+  <div id="result" class="screen hidden">
+    <h2 id="result-title">FINISH!</h2>
+    <div id="result-rows"></div>
+    <button id="btn-restart">↻ Balapan lagi (R)</button>
+    <button id="btn-hub" class="ghost hidden">🗺️ Kembali ke pulau</button>
+    <button id="btn-menu" class="ghost">🏠 Ganti trek</button>
+  </div>
+
+  <div id="loading" class="screen hidden"><h2>Memuat…</h2></div>
+</div>
+<script src="libs/three.min.js"></script>
+<script src="libs/howler.min.js?v=1"></script>
+<script src="js/config.js?v=26"></script>
+<script src="assets/audio/music/music-config.js?v=2"></script>
+<script src="js/save.js?v=30"></script>
+<script src="js/audio.js?v=25"></script>
+<script src="js/music.js?v=4"></script>
+<script src="js/tracks.js?v=44"></script>
+<script src="js/terrain.js?v=3"></script>
+<script src="js/props.js?v=2"></script>
+<script src="js/world.js?v=44"></script>
+<script src="js/physics.js?v=44"></script>
+<script src="js/chars.js?v=34"></script>
+<script src="js/ai.js?v=30"></script>
+<script src="js/items.js?v=26"></script>
+<script src="js/particles.js?v=19"></script>
+<script src="js/camera.js?v=26"></script>
+<script src="js/ui.js?v=31"></script>
+<script src="js/game.js?v=44"></script>
+</body>
+</html>
