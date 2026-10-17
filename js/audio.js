@@ -64,6 +64,10 @@
     screech(){ noise(0.22,0.1,4200); },
     horn(){ blip(392,0.15,'square',0.2); setTimeout(()=>blip(523,0.3,'square',0.2),130); },
     win(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>blip(f,0.3,'square',0.2),i*140)); },
-    lose(){ [400,350,300,220].forEach((f,i)=>setTimeout(()=>blip(f,0.3,'sawtooth',0.15),i*160)); }
+    lose(){ [400,350,300,220].forEach((f,i)=>setTimeout(()=>blip(f,0.3,'sawtooth',0.15),i*160)); },
+    trophy(){ [523,659,784].forEach((f,i)=>setTimeout(()=>blip(f,0.22,'square',0.2),i*110)); setTimeout(()=>blip(1567,0.4,'sine',0.12),340); },
+    keyFanfare(){ [784,988,1175,1568].forEach((f,i)=>setTimeout(()=>blip(f,0.25,'triangle',0.2),i*100)); noise(0.4,0.08,5000); },
+    warp(){ noise(0.45,0.25,600); blip(180,0.45,'sawtooth',0.18,900); },
+    jump(){ blip(260,0.24,'triangle',0.16,420); noise(0.18,0.1,2200); }
   };
 })();

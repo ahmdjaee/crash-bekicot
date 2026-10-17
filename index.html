@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Crash Bekicot — Balapan Offline</title>
-<link rel="stylesheet" href="style.css?v=31">
+<link rel="stylesheet" href="style.css?v=35">
 </head>
 <body>
 <div id="game-wrap">
@@ -19,6 +19,7 @@
       <div id="hud-time">0:00.0</div>
     </div>
     <div id="hud-item"><span id="hud-item-icon">?</span><small id="hud-item-key">E: pakai</small></div>
+    <div id="pause-hint">Esc: Jeda</div>
     <div id="boost-meter"><div id="boost-fill"></div><span id="boost-label">DRIFT</span></div>
     <div id="hud-msg"></div>
     <div id="wrongway" class="hidden">↩ SALAH ARAH!<small>PUTAR BALIK!</small></div>
@@ -28,6 +29,7 @@
         <button id="t-right">▶</button>
       </div>
       <div class="touch-right">
+        <button id="t-pause">⏸</button>
         <button id="t-brake">REM</button>
         <button id="t-drift">DRIFT</button>
         <button id="t-item">ITEM</button>
@@ -36,6 +38,7 @@
   </div>
 
   <div id="countdown" class="hidden">3</div>
+  <div id="portal-prompt" class="hidden"></div>
   <div id="confetti" class="hidden"></div>
   <div id="fade"></div>
 
@@ -59,9 +62,10 @@
           <button data-diff="normal" class="active">Seru</button>
           <button data-diff="hard">Ngamuk</button>
         </div>
-        <button id="btn-start">🏁 MULAI BALAPAN</button>
+        <button id="btn-roam">🗺️ MULAI PETUALANGAN (ENTER)</button>
+        <button id="btn-start" class="ghost">🏁 Balapan cepat (trek terpilih)</button>
+        <button id="btn-back2" class="ghost hidden">← Kembali</button>
         <div class="row small" id="hub-stats"></div>
-        <button id="btn-roam" class="ghost">🗺️ JELAJAHI PULAU</button>
         <button id="btn-help" class="ghost small">❓ Cara main</button>
       </div>
     </div>
@@ -70,8 +74,11 @@
   <div id="help" class="screen hidden">
     <h2>Cara Main</h2>
     <ul>
+      <li>🗺️ <b>Kampanye Petualangan (CTR):</b> ikuti <b>Panah Emas 3D 🧭</b> di atas kartmu menuju portal misi berikutnya! Menangkan Piala (Juara 1) secara bertahap: <b>Pantai</b> & <b>Rimba Jamur</b> → membuka <b>Puncak Salju</b> (1 Piala) → membuka <b>Kawah Panas</b> (2 Piala) → <b>4 Piala Lengkap</b> membuka <b>Gerbang Bos</b> di utara!</li>
+      <li>🏠 <b>Garasi & Jeda:</b> hampiri <b>Gubuk Garasi</b> di pulau atau tekan <b>Esc</b> kapan saja untuk ganti karakter (◀ ▶) secara langsung.</li>
       <li>🏁 <b>Start boost:</b> tahan GAS saat hitungan 1, lepas pas GO!</li>
       <li>💨 <b>Drift CTR:</b> sambil belok, TAHAN SPASI + setir balik (counter-steer) biar tidak muter. Makin lama makin panas: <span class="blue">biru</span> → <span class="orange">oranye</span> → <span class="purple">ungu</span>. Lepas SPASI = BOOST!</li>
+      <li>🚀 <b>Lompat Tanjakan &amp; Air Trick:</b> ngebut melewati <b>Ramp Kuning-Oranye</b> atau puncak bukit akan melontarkan kart terbang parabolik! Saat di udara, tekan <b>SPASI</b> untuk melakukan <b>AIR TRICK ✨</b> (putaran 360° + <b>TRICK BOOST 🚀</b> saat mendarat)!</li>
       <li>📦 Tabrak kotak ? untuk dapat item: Boost, Misil, Minyak, Perisai.</li>
       <li>🛡️ Perisai menahan 1 serangan. Misil bisa dihindari dengan drift tajam di tikungan.</li>
       <li>🔵 Turbo pad biru = boost gratis. Jangan nabrak dinding, muter balik itu malu.</li>
@@ -81,38 +88,39 @@
 
   <div id="pause" class="screen hidden">    <h2>JEDA</h2>
     <button id="btn-resume">▶ Lanjut</button>
+    <div class="row small"><button id="btn-char-prev" class="ghost">◀</button><span id="pause-char">🐌</span><button id="btn-char-next" class="ghost">▶</button></div>
     <button id="btn-restart2" class="ghost">↻ Ulangi</button>
-    <button id="btn-quit" class="ghost">🏠 Menu</button>
+    <button id="btn-quit" class="ghost">🏠 Garasi / Menu</button>
   </div>
 
   <div id="result" class="screen hidden">
     <h2 id="result-title">FINISH!</h2>
     <div id="result-rows"></div>
-    <button id="btn-restart">↻ Balapan lagi (R)</button>
-    <button id="btn-hub" class="ghost hidden">🗺️ Kembali ke pulau</button>
-    <button id="btn-menu" class="ghost">🏠 Ganti trek</button>
+    <button id="btn-hub">🗺️ Lanjut ke Pulau (Enter)</button>
+    <button id="btn-restart" class="ghost">↻ Balapan lagi (R)</button>
+    <button id="btn-menu" class="ghost">🏠 Garasi / Menu</button>
   </div>
 
   <div id="loading" class="screen hidden"><h2>Memuat…</h2></div>
 </div>
 <script src="libs/three.min.js"></script>
 <script src="libs/howler.min.js?v=1"></script>
-<script src="js/config.js?v=26"></script>
+<script src="js/config.js?v=30"></script>
 <script src="assets/audio/music/music-config.js?v=2"></script>
-<script src="js/save.js?v=30"></script>
-<script src="js/audio.js?v=25"></script>
+<script src="js/save.js?v=33"></script>
+<script src="js/audio.js?v=27"></script>
 <script src="js/music.js?v=4"></script>
-<script src="js/tracks.js?v=44"></script>
+<script src="js/tracks.js?v=49"></script>
 <script src="js/terrain.js?v=3"></script>
-<script src="js/props.js?v=2"></script>
-<script src="js/world.js?v=44"></script>
-<script src="js/physics.js?v=44"></script>
-<script src="js/chars.js?v=34"></script>
-<script src="js/ai.js?v=30"></script>
-<script src="js/items.js?v=26"></script>
-<script src="js/particles.js?v=19"></script>
-<script src="js/camera.js?v=26"></script>
-<script src="js/ui.js?v=31"></script>
-<script src="js/game.js?v=44"></script>
+<script src="js/props.js?v=7"></script>
+<script src="js/world.js?v=65"></script>
+<script src="js/physics.js?v=57"></script>
+<script src="js/chars.js?v=36"></script>
+<script src="js/ai.js?v=32"></script>
+<script src="js/items.js?v=27"></script>
+<script src="js/particles.js?v=22"></script>
+<script src="js/camera.js?v=34"></script>
+<script src="js/ui.js?v=36"></script>
+<script src="js/game.js?v=55"></script>
 </body>
 </html>

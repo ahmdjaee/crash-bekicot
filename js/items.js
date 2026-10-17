@@ -62,7 +62,8 @@
       const g=new THREE.CylinderGeometry(1.1,1.3,0.25,10);
       const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x1a1a1a}));
       const bx=kart.pos.x-Math.sin(kart.heading)*4, bz=kart.pos.z-Math.cos(kart.heading)*4;
-      m.position.set(bx,0.15,bz); this.scene.add(m);
+      const by=(kart.gy!=null?kart.gy:0)+0.15;
+      m.position.set(bx,by,bz); this.scene.add(m);
       this.oils.push({mesh:m, life:40});
     },
     fireMissile(kart, racers){
@@ -76,9 +77,10 @@
       const g=new THREE.ConeGeometry(0.5,1.8,8);
       const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff3333}));
       m.rotation.x=Math.PI/2;
-      m.position.set(kart.pos.x+Math.sin(kart.heading)*3,1,kart.pos.z+Math.cos(kart.heading)*3);
+      const my=(kart.gy!=null?kart.gy:0)+1.0;
+      m.position.set(kart.pos.x+Math.sin(kart.heading)*3,my,kart.pos.z+Math.cos(kart.heading)*3);
       this.scene.add(m);
-      this.missiles.push({mesh:m, owner:kart, target:best, heading:kart.heading, speed:C.missileSpeed, life:6});
+      this.missiles.push({mesh:m, owner:kart, target:best, heading:kart.heading, speed:C.missileSpeed, life:6, lastIdx:kart.lastIdx||0});
       BK.Audio.boost();
     },
     update(dt, racers){
@@ -106,11 +108,16 @@
           const want=Math.atan2(dx,dz);
           let d=want-mi.heading;
           while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2;
-          mi.heading+=Math.max(-3*dt,Math.min(3*dt,d));
+          mi.heading+=Math.max(-3.6*dt,Math.min(3.6*dt,d));
         }
         mi.mesh.position.x+=Math.sin(mi.heading)*mi.speed*dt;
         mi.mesh.position.z+=Math.cos(mi.heading)*mi.speed*dt;
         mi.mesh.rotation.z+=dt*8;
+        const q=this.world.nearest(mi.mesh.position.x,mi.mesh.position.z,mi.lastIdx||0);
+        mi.lastIdx=q.idx;
+        if(this.world.pts && this.world.pts[q.idx]){
+          mi.mesh.position.y = this.world.pts[q.idx].y + 1.0;
+        }
         let hit=false;
         racers.forEach(r=>{
           if(r===mi.owner||r.finishTime!=null) return;
@@ -123,7 +130,6 @@
           }
         });
         // kena dinding?
-        const q=this.world.nearest(mi.mesh.position.x,mi.mesh.position.z,0);
         if(Math.abs(q.lateral)>this.world.half) hit=true;
         if(hit||mi.life<=0){ this.scene.remove(mi.mesh); this.missiles.splice(i,1); }
       }
@@ -132,19 +138,35 @@
         this.oils[i].life-=dt;
         if(this.oils[i].life<=0){ this.scene.remove(this.oils[i].mesh); this.oils.splice(i,1); }
       }
-      // AI pakai item sesuai kepribadian (Reggie cepat, Coco menahan)
+      // AI pakai item secara taktis & agresif
       racers.forEach(r=>{
-        if(r.isPlayer||!r.item||r.finishTime!=null) return;
-        // Reggie prioritaskan misil ke posisi 1: pakai langsung jika ada
+        if(r.isPlayer||!r.item||r.finishTime!=null||r.spinTime>0) return;
         const prof=BK.aiProfile?BK.aiProfile(r):null;
-        const waitBase=prof?prof.itemWait:1.5;
-        r._aiItemT=(r._aiItemT==null?waitBase+r.seed*1.5:r._aiItemT)-dt;
+        const waitBase=prof?prof.itemWait:0.85;
+        r._aiItemT=(r._aiItemT==null?waitBase+r.seed*0.8:r._aiItemT)-dt;
+
+        // Deteksi situasi taktis instan
+        const hasTargetAhead = racers.some(o=>o!==r && o.finishTime==null && (o.progress - r.progress)>1.5 && (o.progress - r.progress)<48);
+        const tailgaterBehind = racers.some(o=>o!==r && o.finishTime==null && (r.progress - o.progress)>1.5 && (r.progress - o.progress)<22);
+        const incomingMissile = this.missiles.some(m=>m.target===r || (m.owner!==r && Math.hypot(m.mesh.position.x-r.pos.x, m.mesh.position.z-r.pos.z)<24));
+
+        if(r.item==='shield' && incomingMissile){
+          this.use(r, racers); r._aiItemT=waitBase; return;
+        }
+        if(r.item==='missile' && hasTargetAhead && r._aiItemT<=waitBase*0.5){
+          this.use(r, racers); r._aiItemT=waitBase; return;
+        }
+        if(r.item==='oil' && tailgaterBehind && r._aiItemT<=waitBase*0.6){
+          this.use(r, racers); r._aiItemT=waitBase; return;
+        }
         if(r._aiItemT<=0){
-          r._aiItemT=waitBase+Math.random()*1.5;
-          // Dingo pemburu: perisai dipakai hanya saat ada misil terbang
-          if(r.item==='shield'&&prof&&prof.def>0.5){
-            const threat=this.missiles.some(m=>m.owner!==r);
-            if(!threat){ r._aiItemT=1.0; return; }
+          r._aiItemT=waitBase+Math.random()*0.9;
+          if(r.item==='shield' && prof && prof.def>0.5 && !incomingMissile){
+            const closeRival = racers.some(o=>o!==r && Math.hypot(o.pos.x-r.pos.x, o.pos.z-r.pos.z)<7.5);
+            if(!closeRival){ r._aiItemT=0.6; return; }
+          }
+          if(r.item==='missile' && !hasTargetAhead){
+            r._aiItemT=0.45; return; // simpan misil sampai ada lawan di depan
           }
           this.use(r, racers);
         }

@@ -7,17 +7,18 @@
     skids=[]; rings=[]; floats=[]; smokes=[];
   };
   function spawn(pos,color,n,spread,up,life,size,op){
+    const by = pos.y || 0;
     for(let i=0;i<n;i++){
       if(pool.length>400) { const old=pool.shift(); scene.remove(old.mesh); }
       const g=new THREE.SphereGeometry(size||0.35,5,4);
       const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color,transparent:true,opacity:op==null?0.9:op}));
-      m.position.set(pos.x+(Math.random()-0.5)*(spread||2), 0.5+Math.random(), pos.z+(Math.random()-0.5)*(spread||2));
+      m.position.set(pos.x+(Math.random()-0.5)*(spread||2), by+0.4+Math.random()*0.6, pos.z+(Math.random()-0.5)*(spread||2));
       scene.add(m);
       pool.push({mesh:m, vx:(Math.random()-0.5)*6, vy:(up||3)+Math.random()*3, vz:(Math.random()-0.5)*6, life:life||0.6, max:life||0.6});
     }
   }
   BK.spawnDust=function(pos,color,vx,vz){ // debu JALANAN: asap lembut natural
-    BK.spawnSmoke(pos.x,pos.z,color,vx,vz,0.8,2.4);
+    BK.spawnSmoke(pos.x,pos.z,color,vx,vz,0.8,2.4,pos.y||0);
   };
   BK.spawnPuff=function(pos,color){ // efek AKSI (drift/rem/boost): semburan tegas pendek
     if(pool.length>150) return;
@@ -44,17 +45,17 @@
     return smokeTex;
   }
   let smokes=[];
-  BK.spawnSmoke=function(x,z,color,vx,vz,life,grow){
+  BK.spawnSmoke=function(x,z,color,vx,vz,life,grow,y0){
     if(!scene) return;
     if(smokes.length>70){ const o=smokes.shift(); scene.remove(o.mesh); o.mesh.material.dispose(); }
     const m=new THREE.SpriteMaterial({map:getSmokeTex(),color:color||0xbbbbbb,transparent:true,opacity:0.5,depthWrite:false});
     const s=new THREE.Sprite(m);
-    const s0=0.5+Math.random()*0.4;
-    s.position.set(x+(Math.random()-0.5)*0.5,0.15,z+(Math.random()-0.5)*0.5);
+    const s0=0.5+Math.random()*0.4, baseY=y0||0;
+    s.position.set(x+(Math.random()-0.5)*0.5,baseY+0.15,z+(Math.random()-0.5)*0.5);
     s.scale.set(s0,s0*0.75,1);
     m.rotation=Math.random()*Math.PI*2;
     scene.add(s);
-    smokes.push({mesh:s,
+    smokes.push({mesh:s, baseY,
       vx:(vx||0)+(Math.random()-0.5)*1.6, vy:0.6+Math.random()*0.9, vz:(vz||0)+(Math.random()-0.5)*1.6,
       life:life||0.8, max:life||0.8, grow:grow||2.4, rot:(Math.random()-0.5)*1.6, s0});
   };
@@ -90,7 +91,7 @@
   const skidGeo=new THREE.BoxGeometry(0.65,0.03,1.5);
   BK.spawnSkid=function(x,z,heading,gy){
     if(!scene) return;
-    if(skids.length>160){ const o=skids.shift(); scene.remove(o.mesh); o.mesh.material.dispose(); }
+    if(skids.length>320){ const o=skids.shift(); scene.remove(o.mesh); o.mesh.material.dispose(); }
     const m=new THREE.Mesh(skidGeo,
       new THREE.MeshBasicMaterial({color:0x050505,transparent:true,opacity:0.75}));
     m.position.set(x,(gy||0)+0.055,z); m.rotation.y=heading;
@@ -127,7 +128,7 @@
       const sm=smokes[i]; sm.life-=dt;
       const age=1-Math.max(0,sm.life)/sm.max;
       sm.mesh.position.x+=sm.vx*dt; sm.mesh.position.z+=sm.vz*dt;
-      if(sm.mesh.position.y<1.6) sm.mesh.position.y+=sm.vy*dt;
+      if(sm.mesh.position.y<(sm.baseY||0)+1.6) sm.mesh.position.y+=sm.vy*dt;
       const sc=sm.s0*(1+age*sm.grow);
       sm.mesh.scale.set(sc,sc*0.75,1);
       sm.mesh.material.rotation+=sm.rot*dt;

@@ -1,7 +1,7 @@
 /* UI: menu trek/diff, HUD, minimap, pesan */
 (function(){
   const $=id=>document.getElementById(id);
-  let selTrack=BK.Tracks[0].id, selDiff='normal', selChar='turbo';
+  let selTrack=BK.Tracks[0].id, selDiff='normal', selChar=BK.Save.getChar();
 
   BK.getSelection=function(){
     const c=BK.charById(selChar);
@@ -67,12 +67,28 @@
     function setChar(k){
       charIdx=(k+BK.Characters.length)%BK.Characters.length;
       selChar=BK.Characters[charIdx].id;
+      BK.Save.setChar(selChar);
       cl.style.transform=`translateX(-${charIdx*100}%)`;
       cards.forEach((d,i)=>d.classList.toggle('active',i===charIdx));
       dotsBox.querySelectorAll('i').forEach((d,i)=>d.classList.toggle('on',i===charIdx));
       renderCharStats();
       BK.previewChar(selChar);
+      // langsung diterapkan ke kart yang sedang dipakai (pulau/balap)
+      if(BK.applyChar)BK.applyChar(selChar);
+      if(BK.refreshPauseChar)BK.refreshPauseChar();
     }
+    // dipanggil game.js setelah ganti dari jeda: samakan carousel tanpa loop
+    BK.syncCharUI=function(id){
+      const k=BK.Characters.findIndex(c=>c.id===id);
+      if(k<0||k===charIdx) { if(BK.refreshPauseChar)BK.refreshPauseChar(); return; }
+      charIdx=k; selChar=id;
+      cl.style.transform=`translateX(-${charIdx*100}%)`;
+      cards.forEach((d,i)=>d.classList.toggle('active',i===charIdx));
+      dotsBox.querySelectorAll('i').forEach((d,i)=>d.classList.toggle('on',i===charIdx));
+      renderCharStats();
+      BK.previewChar(selChar);
+      if(BK.refreshPauseChar)BK.refreshPauseChar();
+    };
     BK.charStep=d=>{ setChar(charIdx+d); BK.Audio.unlock(); };
     $('char-prev').onclick=()=>BK.charStep(-1);
     $('char-next').onclick=()=>BK.charStep(1);
@@ -99,12 +115,27 @@
     $('btn-help').onclick=()=>{ $('menu').classList.add('hidden'); $('help').classList.remove('hidden'); };
     $('btn-back').onclick=()=>{ $('help').classList.add('hidden'); $('menu').classList.remove('hidden'); };
     $('btn-resume').onclick=()=>BK.togglePause(false);
-    $('btn-restart2').onclick=()=>BK.restartRace&&BK.restartRace();
-    $('btn-quit').onclick=()=>location.reload();
-    $('btn-restart').onclick=()=>BK.restartRace&&BK.restartRace();
-    $('btn-menu').onclick=()=>location.reload();
+    const bcp=$('btn-char-prev'), bcn=$('btn-char-next');
+    if(bcp)bcp.onclick=()=>{ if(BK.switchChar)BK.switchChar(-1); };
+    if(bcn)bcn.onclick=()=>{ if(BK.switchChar)BK.switchChar(1); };
+    BK.refreshPauseChar=function(){
+      const el=$('pause-char'); if(!el) return;
+      const k=BK.playerKart;
+      const c=k&&k.char?k.char:BK.charById('turbo');
+      el.textContent=c.icon+' '+c.name;
+    };
+    BK.refreshPauseChar();
+    $('btn-restart2').onclick=()=>BK.restartSlot&&BK.restartSlot();
+    $('btn-quit').onclick=()=>BK.openMenu&&BK.openMenu();
+    $('btn-restart').onclick=()=>BK.restartSlot&&BK.restartSlot();
+    $('btn-menu').onclick=()=>BK.openMenu&&BK.openMenu('done');
+    const bback2=$('btn-back2'); if(bback2)bback2.onclick=()=>{ if(BK.closeMenuBack)BK.closeMenuBack(); };
     const bhub=$('btn-hub'); if(bhub)bhub.onclick=()=>BK.returnToHub&&BK.returnToHub();
-    const broam=$('btn-roam'); if(broam)broam.onclick=()=>{ BK.Audio.unlock(); BK.startRoam&&BK.startRoam(); };
+    const broam=$('btn-roam'); if(broam)broam.onclick=()=>{
+      BK.Audio.unlock();
+      if(BK._menuOrigin==='roam'&&BK.closeMenuBack) BK.closeMenuBack();
+      else if(BK.startRoam) BK.startRoam();
+    };
     // sentuh
     const bind=(id,down,up)=>{
       const el=$(id);
@@ -117,25 +148,34 @@
     bind('t-drift',()=>BK.touch.drift=true,()=>BK.touch.drift=false);
     bind('t-brake',()=>BK.touch.brake=true,()=>BK.touch.brake=false);
     bind('t-item',()=>{ BK.touch.itemPressed=true; });
+    bind('t-pause',()=>BK.togglePause(),null);
     refreshBest(); BK.refreshHubStats();
   };
   function refreshBest(){
     const cards=document.querySelectorAll('#track-list .track-card');
     BK.Tracks.forEach((t,i)=>{
       const b=BK.Save.getBest(t.id);
+      const won=BK.Save.hasTrophy(t.id);
       const el=cards[i]&&cards[i].querySelector('.tbest');
-      if(el) el.textContent='⏱ '+BK.Save.fmt(b);
+      if(el) el.textContent=(won?'🏆 ':'')+'⏱ '+BK.Save.fmt(b);
     });
   }
   BK.refreshBest=refreshBest;
   BK.refreshHubStats=function(){
     const el=$('hub-stats'); if(!el) return;
-    const open=['pantai','hutan','kawah'].filter(id=>{
-      if(id==='pantai')return true;
-      if(id==='hutan')return BK.Save.totalWins()>=1;
-      return BK.Save.totalWins()>=3&&!!BK.Save.getBest('pantai');
-    }).length;
-    el.innerHTML=`🏆 ${BK.Save.totalWins()} trofi • 🌀 ${open}/3 portal`;
+    const t=BK.Save.trophyCount();
+    const hasKey=BK.Save.hasBossKey();
+    el.innerHTML=`🏆 ${t}/4 Piala Pulau • 👑 Gerbang Bos: ${hasKey?'DIKALAHKAN 🔑':(t>=4?'TERBUKA 🔥':'Terkunci')}`;
+  };
+  // prompt konfirmasi portal di pulau (ketuk = setuju, seperti Enter)
+  BK.showPortalPrompt=function(html){
+    const el=$('portal-prompt'); if(!el) return;
+    el.innerHTML=html; el.classList.remove('hidden');
+    el.onclick=()=>{ if(BK.confirmPortal)BK.confirmPortal(); };
+  };
+  BK.hidePortalPrompt=function(){
+    const el=$('portal-prompt'); if(!el) return;
+    el.classList.add('hidden'); el.onclick=null;
   };
 
   BK.show=(id)=>$(id).classList.remove('hidden');
@@ -223,7 +263,7 @@
   BK.drawMinimap=function(world, racers){
     const cv=$('minimap'), ctx=cv.getContext('2d');
     ctx.clearRect(0,0,cv.width,cv.height);
-    if(world.isHub){ // minimap pulau: garis pantai + portal + pintu bos
+    if(world.isHub){ // minimap pulau: garis pantai + 4 portal + garasi + pintu bos + beacon misi
       const cx=cv.width/2, cy=cv.height/2, R=cv.width/2-10;
       const SC=Math.max.apply(null,world.coast)+12; // ikut ukuran pulau
       ctx.beginPath();
@@ -234,15 +274,36 @@
       }
       ctx.closePath();
       ctx.fillStyle='rgba(232,216,160,.9)'; ctx.fill();
-      const pcols={pantai:'#3fb6ff',hutan:'#7CFC00',kawah:'#ff5a2a'};
+      const pcols={pantai:'#3fb6ff',hutan:'#7CFC00',kawah:'#ff5a2a',salju:'#b8ecff'};
+      const nextP=(world.portals||[]).find(p=>!p.locked&&!p.won);
+      const pulse=9+Math.sin(performance.now()/180)*2.5;
       (world.portals||[]).forEach(p=>{
-        ctx.beginPath(); ctx.arc(cx+p.x/SC*R,cy+p.z/SC*R,7,0,7);
+        const px=cx+p.x/SC*R, py=cy+p.z/SC*R;
+        if(p===nextP){
+          ctx.beginPath(); ctx.arc(px,py,pulse,0,7);
+          ctx.strokeStyle='#ffd23f'; ctx.lineWidth=2; ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(px,py,7,0,7);
         ctx.fillStyle=p.locked?'#555555':(pcols[p.trackId]||'#fff'); ctx.fill();
-        ctx.lineWidth=2; ctx.strokeStyle='#000'; ctx.stroke();
+        ctx.lineWidth=p.won?2.5:2; ctx.strokeStyle=p.won?'#ffd23f':'#000'; ctx.stroke();
       });
+      if(world.garage){
+        ctx.fillStyle='#ff9f1c';
+        ctx.fillRect(cx+world.garage.x/SC*R-4,cy+world.garage.z/SC*R-4,8,8);
+        ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+        ctx.strokeRect(cx+world.garage.x/SC*R-4,cy+world.garage.z/SC*R-4,8,8);
+      }
       if(world.bossDoor){
-        ctx.fillStyle='#ffd23f';
-        ctx.fillRect(cx+world.bossDoor.x/SC*R-4,cy+world.bossDoor.z/SC*R-4,8,8);
+        const bOpen=BK.Save.trophyCount()>=4||BK.Save.hasBossKey();
+        const bx=cx+world.bossDoor.x/SC*R, by=cy+world.bossDoor.z/SC*R;
+        if(bOpen&&!BK.Save.hasBossKey()){
+          ctx.beginPath(); ctx.arc(bx,by,pulse+1,0,7);
+          ctx.strokeStyle='#ff5a2a'; ctx.lineWidth=2; ctx.stroke();
+        }
+        ctx.fillStyle=bOpen?'#ffd23f':'#888888';
+        ctx.fillRect(bx-5,by-5,10,10);
+        ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+        ctx.strokeRect(bx-5,by-5,10,10);
       }
       racers.forEach(r=>{
         ctx.beginPath(); ctx.arc(cx+r.pos.x/SC*R,cy+r.pos.z/SC*R,6,0,7);
@@ -291,16 +352,21 @@
   BK.showResult=function(rows, playerWon, isRecord){
     BK.hide('hud'); $('result-title').textContent=playerWon?'🏆 MENANG!':'😭 KALAH — COBA LAGI!';
     const box=$('result-rows'); box.innerHTML='';
-    rows.forEach((r,i)=>{
+    let rank=0;
+    rows.forEach(r=>{
       const d=document.createElement('div');
       d.className='rrow'+(r.isPlayer?' me':'');
-      const t=r.note?r.note:(r.time!=null?BK.Save.fmt(r.time):'+'+r.gap+'m');
-      d.innerHTML=`<span>${i+1}. ${r.name}</span><span>${t}</span>`;
+      if(r.note){
+        d.innerHTML=`<span>${r.note}</span><span></span>`;
+      } else {
+        rank++;
+        const t=r.time!=null?BK.Save.fmt(r.time):'+'+r.gap+'m';
+        d.innerHTML=`<span>${rank}. ${r.name}</span><span>${t}</span>`;
+      }
       box.appendChild(d);
     });
     if(isRecord){ const d=document.createElement('div'); d.className='rrow me'; d.innerHTML='<span>⭐ Rekor lap tercepat baru!</span><span></span>'; box.appendChild(d); }
-    // balapan dari portal hub: tawarkan kembali ke pulau
-    const bh=$('btn-hub'); if(bh) bh.classList.toggle('hidden',!BK.hubOrigin);
+    const bh=$('btn-hub'); if(bh) bh.classList.remove('hidden');
     BK.show('result');
     playerWon?BK.Audio.win():BK.Audio.lose();
   };

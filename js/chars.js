@@ -185,6 +185,7 @@
     refs.shield=shield;
 
     g.scale.setScalar(char.scale||1);
+    g.rotation.order='YXZ';
     Object.assign(g.userData, refs);
     return g;
   };
@@ -194,6 +195,11 @@
     const char = (typeof charId==='string') ? BK.charById(charId) : BK.Characters[0];
     const mesh = BK.buildSnail(char);
     scene.add(mesh);
+    if(typeof BK.softDisc==='function'){ // bayangan cakram (diskalakan per frame di physics)
+      const blob=BK.softDisc(1.7,0x000000,0.4);
+      blob.position.y=0.06; scene.add(blob);
+      mesh.userData.blob=blob;
+    }
     const C = BK.Config;
     return {
       mesh, char, stat:char.stat, isPlayer:!!isPlayer,

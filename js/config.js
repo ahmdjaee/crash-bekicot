@@ -5,9 +5,9 @@ BK.Config = {
   samples: 220,          // centerline resolution
   wallBounce: 0.45,
   difficulties: {
-    easy:   { aiTop: 26, aiAccel: 20, rubber: 4.5, missileChance: 0.1, errMul: 1.6, name: 'Santai' },
-    normal: { aiTop: 30, aiAccel: 24, rubber: 6.5, missileChance: 0.25, errMul: 1.0, name: 'Seru' },
-    hard:   { aiTop: 33, aiAccel: 27, rubber: 8.5, missileChance: 0.4, errMul: 0.4, name: 'Ngamuk' }
+    easy:   { aiTop: 32.5, aiAccel: 27, rubber: 7.8,  missileChance: 0.35, errMul: 0.70, aggrMul: 1.0,  name: 'Santai' },
+    normal: { aiTop: 34.5, aiAccel: 31, rubber: 10.0, missileChance: 0.55, errMul: 0.20, aggrMul: 1.35, name: 'Seru' },
+    hard:   { aiTop: 36.5, aiAccel: 35, rubber: 12.5, missileChance: 0.75, errMul: 0.0,  aggrMul: 1.75, name: 'Ngamuk' }
   },
   player: { topSpeed: 34, accel: 30, brake: 42, grip: 8.5, turn: 2.1, offroadMul: 0.55 },
   drift: {

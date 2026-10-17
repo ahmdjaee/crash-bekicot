@@ -22,7 +22,8 @@
     addLetter(ch){ const s=this.data.letters||''; if(s.indexOf(ch)<0){ this.data.letters=s+ch; write(this.data); return true; } return false; },
     hasTrail(){ return (this.data.letters||'').length>=7; },
     getShop(){ return this.data.shop||{horn:false,trail:false,hat:false,activeTrail:null}; },
-    buyShop(id,cost){
+    getChar(){ return this.data.charId||'turbo'; },
+    setChar(id){ this.data.charId=id; write(this.data); },    buyShop(id,cost){
       const s=this.getShop();
       if(s[id]||(this.data.coins||0)<cost) return false;
       this.data.coins-=cost; s[id]=true;
@@ -42,6 +43,14 @@
     setGhost(pts,dur){ try{ this.data.ghost={pts:pts.slice(-300),dur}; write(this.data); }catch(e){} },
     hasBossKey(){ return !!this.data.bossKey; },
     setBossKey(){ this.data.bossKey=true; write(this.data); },
+    // piala = juara 1 per trek (pantai/hutan/salju/kawah); 4 piala membuka pintu bos
+    setTrophy(trackId){ const k='trophy_'+trackId; if(!this.data[k]){ this.data[k]=1; write(this.data); return true; } return false; },
+    hasTrophy(trackId){ return !!this.data['trophy_'+trackId]; },
+    trophyCount(){ let n=0; ['pantai','hutan','salju','kawah'].forEach(id=>{ if(this.data['trophy_'+id])n++; }); return n; },
+    introSeen(){ return !!this.data.introSeen; },
+    setIntroSeen(){ this.data.introSeen=true; write(this.data); },
+    finaleSeen(){ return !!this.data.finaleSeen; },
+    setFinaleSeen(){ this.data.finaleSeen=true; write(this.data); },
     fmt(sec){
       if(sec==null) return '--:--.-';
       const m=Math.floor(sec/60), s=sec-m*60;
