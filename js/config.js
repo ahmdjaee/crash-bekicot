@@ -24,5 +24,9 @@ BK.Config = {
   },
   items: { boxRespawn: 5, missileSpeed: 46, spinTime: 1.25 },
   smoke: 1.0, // knob intensitas ASAP JALAN (0 = mati, 1 = normal)
-  effects: 1.0, // knob peredam GUNCANGAN LAYAR (0 = mati total)
+  effects: 1.0, // ini knob peredam GUNCANGAN LAYAR (0 = mati total)
+  // katup MODE OPEN-WORLD (hub pulau): false = fitur disetel mati sementara —
+  // tombol/kunci pintas disembunyikan dari UI, seluruh kode dipertahankan untuk pengembangan ulang.
+  // Setel true untuk menghidupkan lagi kapan pun.
+  openworld: false,
 };

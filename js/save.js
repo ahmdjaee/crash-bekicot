@@ -43,6 +43,16 @@
     setGhost(pts,dur){ try{ this.data.ghost={pts:pts.slice(-300),dur}; write(this.data); }catch(e){} },
     hasBossKey(){ return !!this.data.bossKey; },
     setBossKey(){ this.data.bossKey=true; write(this.data); },
+    // karakter HD kunci-per-karakter: tuntas map = terbuka (balnok=pantai, krambil=salju, juara=kawah)
+    setCharOpen(id){ const k='open_'+id; if(!this.data[k]){ this.data[k]=1; write(this.data); return true; } return false; },
+    charOpen(id){
+      if(this.data['open_'+id]) return true;
+      // migrasi simpanan lama: piala = bukti map sudah tuntas (dan kunci-bos lama tetap membuka Juara)
+      if(id==='balnok' && this.data.trophy_pantai) return true;
+      if(id==='krambil' && this.data.trophy_salju) return true;
+      if(id==='juara' && (this.data.trophy_kawah || this.data.bossKey)) return true;
+      return false;
+    },
     // piala = juara 1 per trek (pantai/hutan/salju/kawah); 4 piala membuka pintu bos
     setTrophy(trackId){ const k='trophy_'+trackId; if(!this.data[k]){ this.data[k]=1; write(this.data); return true; } return false; },
     hasTrophy(trackId){ return !!this.data['trophy_'+trackId]; },

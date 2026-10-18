@@ -28,6 +28,45 @@
       for(let y=0;y<2;y++)for(let x=0;x<8;x++){ g.fillStyle=(x+y)%2?'#111':'#fff'; g.fillRect(x*cw,y*ch,cw,ch); }
     });
   }
+  // batu vulkanik hitam berpasir (pantai): basalt gelap + rembesan & gundukan pasir menempel
+  function basaltSandTexture(){
+    if(basaltSandTexture.t) return basaltSandTexture.t;
+    const t=basaltSandTexture.t=canvasTex(512,512,(g)=>{
+      g.fillStyle='#1e1b18'; g.fillRect(0,0,512,512);
+      // kompos mineral: faset abu gelap + bintik halus (variasi per faset via flatShading)
+      for(let i=0;i<1400;i++){
+        const v=14+Math.random()*52;
+        g.globalAlpha=0.10+Math.random()*0.16;
+        g.fillStyle='rgb('+(v|0)+','+((v*0.93)|0)+','+((v*0.82)|0)+')';
+        const sz=2+Math.random()*7;
+        g.fillRect(Math.random()*512, Math.random()*512, sz, sz*0.7);
+      }
+      g.globalAlpha=1;
+      // rembesan pasir menetes lurus dari puncak ke dinding (tipis)
+      for(let i=0;i<22;i++){
+        let px=Math.random()*512, py=Math.random()*360;
+        g.strokeStyle='rgba(224,202,150,'+(0.14+Math.random()*0.18)+')';
+        g.lineWidth=2+Math.random()*3; g.lineCap='round';
+        g.beginPath(); g.moveTo(px,py);
+        for(let k=0;k<6;k++){ px+=(Math.random()-0.5)*10; py+=8+Math.random()*16; g.lineTo(px,py); }
+        g.stroke();
+      }
+      // gundukan pasir yang menempel di batu (kluster lembut, jarang — hitam tetap dominan)
+      for(let i=0;i<30;i++){
+        const cx=Math.random()*512, cy=Math.random()*512;
+        const r=8+Math.random()*24, n=6+((Math.random()*5)|0);
+        for(let k=0;k<n;k++){
+          g.fillStyle='rgba(226,204,154,'+(0.08+Math.random()*0.16)+')';
+          g.beginPath();
+          g.arc(cx+(Math.random()-0.5)*r*1.6, cy+(Math.random()-0.5)*r*0.9, r*(0.5+Math.random()*0.5), 0, Math.PI*2);
+          g.fill();
+        }
+      }
+    });
+    t.wrapS=t.wrapT=THREE.RepeatWrapping;
+    return t;
+  }
+
   function chevronTexture(){
     const t=canvasTex(128,128,(g,w,h)=>{
       g.clearRect(0,0,w,h);
@@ -249,16 +288,30 @@
       g.setIndex(id); g.computeVertexNormals();
       const m=new THREE.Mesh(g,mat); group.add(m); return m;
     }
-    const shoulderM = def.id==='pantai' ? new THREE.MeshLambertMaterial({map:sandTex(),color:0xe5cf96})
-      : def.id==='hutan' ? new THREE.MeshLambertMaterial({map:pathTex(),color:0x9e845c})
-      : def.id==='kawah' ? new THREE.MeshLambertMaterial({map:pathTex(),color:0x4a2f37})
-      : new THREE.MeshLambertMaterial({map:snowTex(),color:0xdceeff});
-    const edgeM = def.id==='pantai' ? new THREE.MeshLambertMaterial({color:0xf2e3b8})
-      : def.id==='hutan' ? new THREE.MeshLambertMaterial({color:0xb59f7b})
-      : def.id==='kawah' ? new THREE.MeshLambertMaterial({color:0x664049})
-      : new THREE.MeshLambertMaterial({color:0xf4faff});
-    ribbon(half, 0.85, shoulderM, 0.03); ribbon(-half-0.85, 0.85, shoulderM, 0.03);
-    ribbon(half-0.9, 0.4, edgeM, 0.035); ribbon(-half+0.5, 0.4, edgeM, 0.035);
+    // Apron transisi tepi jalan (menyatu lembut ke atas pinggir aspal menggunakan featherTex agar TIDAK terasa misah dengan jalanan)
+    const apronMat = def.id==='pantai'
+      ? new THREE.MeshLambertMaterial({map:sandTex(), alphaMap:featherTex(), transparent:true, opacity:0.92, color:0xe8d296, depthWrite:false})
+      : def.id==='hutan'
+      ? new THREE.MeshLambertMaterial({map:pathTex(), alphaMap:featherTex(), transparent:true, opacity:0.90, color:0x8a704c, depthWrite:false})
+      : def.id==='kawah'
+      ? new THREE.MeshLambertMaterial({map:pathTex(), alphaMap:featherTex(), transparent:true, opacity:0.92, color:0x472c34, depthWrite:false})
+      : new THREE.MeshLambertMaterial({map:snowTex(), alphaMap:featherTex(), transparent:true, opacity:0.92, color:0xe6f2ff, depthWrite:false});
+    function featherRibbon(offset, w, mat, yOff){
+      const g=new THREE.BufferGeometry(); const v=[], uv=[], id=[];
+      for(let i=0;i<N;i++){
+        const p=pts[i], n=normals[i];
+        v.push(p.x+n.x*offset,p.y+yOff,p.z+n.z*offset, p.x+n.x*(offset+w),p.y+yOff,p.z+n.z*(offset+w));
+        uv.push(0,i*0.3, 1,i*0.3);
+        const a=i*2,b=i*2+1,c=((i+1)%N)*2,d=((i+1)%N)*2+1;
+        id.push(a,c,b,b,c,d);
+      }
+      g.setAttribute('position', new THREE.Float32BufferAttribute(v,3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+      g.setIndex(id); g.computeVertexNormals();
+      const m=new THREE.Mesh(g,mat); group.add(m); return m;
+    }
+    featherRibbon(half-1.25, 2.1, apronMat, 0.032);
+    featherRibbon(-half-0.85, 2.1, apronMat, 0.032);
 
     // marka tengah putus-putus (di hutan = susunan batu candi / cobblestone di tengah jalur tanah)
     {
@@ -289,81 +342,127 @@
       m.position.set(p.x,p.y+0.05,p.z); group.add(m);
     }
 
-    // pembatas jalan kiri-kanan yang RENDAH & NATURAL sesuai ekosistem tiap map (bukan tembok tinggi):
-    // - pantai : tanggul pasir rendah + bebatuan pantai berpasir
-    // - hutan  : tanggul tanah lumut + batu kali berlumut rendah
-    // - kawah  : tanggul kerak kawah + batu-batu pegunungan vulkanik rendah
-    // - salju  : tanggul salju + batu gunung bersalju rendah
-    function naturalBerm(side){
-      const g=new THREE.BufferGeometry(); const v=[], uv=[], id=[];
-      for(let i=0;i<N;i++){
-        const p=pts[i], n=normals[i];
-        const wave = 0.04*Math.sin(i*0.65 + (side>0?0:2.1));
-        const o0 = side*(half+0.15), y0 = p.y+0.02;
-        const o1 = side*(half+0.95), y1 = p.y+0.26+wave; // puncak tanggul kecil/rendah (~26cm)
-        const o2 = side*(half+2.50), y2 = p.y-0.24;
-        v.push(
-          p.x+n.x*o0, y0, p.z+n.z*o0,
-          p.x+n.x*o1, y1, p.z+n.z*o1,
-          p.x+n.x*o2, y2, p.z+n.z*o2
-        );
-        uv.push(i*0.4,0, i*0.4,0.5, i*0.4,1);
-        const a=i*3, b=((i+1)%N)*3;
-        if(side>0){
-          id.push(a,b,a+1, a+1,b,b+1, a+1,b+1,a+2, a+2,b+1,b+2);
-        } else {
-          id.push(a,a+1,b, a+1,b+1,b, a+1,a+2,b+1, a+2,b+2,b+1);
+    // Pembatas jalan kiri-kanan berupa FORMASI BEBATUAN NYAMBUNG (continuous connected rock ridge)
+    // yang tumbuh langsung dari tepi jalan (half - 0.35) dengan tinggi sedang (~0.58m..0.92m) & menyatu dengan pasir/tanah/gunung/salju:
+    function continuousRockRidge(side){
+      const SUB = 3, M_STEPS = N * SUB, K = 7; // 660 cincin × 7 titik profil melintang
+      const g = new THREE.BufferGeometry();
+      const v = [], cols = [], id = [];
+
+      const cBase  = new THREE.Color(def.id==='pantai'?0xe8d294 : def.id==='hutan'?0x6e5638 : def.id==='kawah'?0x362028 : 0xeaf4ff);
+      const cDrift = new THREE.Color(def.id==='pantai'?0xdcc180 : def.id==='hutan'?0x4d6e35 : def.id==='kawah'?0x4d2b34 : 0xf6faff);
+      const cRock1 = new THREE.Color(def.id==='pantai'?0x4a4138 : def.id==='hutan'?0x6e6a5e : def.id==='kawah'?0x472b35 : 0x8296ad);
+      const cRock2 = new THREE.Color(def.id==='pantai'?0x2c2620 : def.id==='hutan'?0x546348 : def.id==='kawah'?0x2c1a22 : 0x6b7f96);
+      const cCap   = new THREE.Color(def.id==='pantai'?0xd6c3a1 : def.id==='hutan'?0x4a6b34 : def.id==='kawah'?0x5e3843 : 0xf4f9ff);
+      const tmpC   = new THREE.Color();
+
+      for(let m=0; m<M_STEPS; m++){
+        const f = m / SUB, i0 = Math.floor(f)%N, i1 = (i0+1)%N, u = f - Math.floor(f);
+        const p0 = pts[i0], p1 = pts[i1], n0 = normals[i0], n1 = normals[i1];
+        const px = p0.x + (p1.x-p0.x)*u, py = p0.y + (p1.y-p0.y)*u, pz = p0.z + (p1.z-p0.z)*u;
+        let nx = n0.x + (n1.x-n0.x)*u, nz = n0.z + (n1.z-n0.z)*u;
+        const nl = Math.hypot(nx,nz)||1; nx/=nl; nz/=nl;
+
+        // Noise deterministik berlapis agar punggung batu naik-turun alami namun 100% menyambung utuh
+        const ph = m * 0.21 + (side>0 ? 0 : 4.7);
+        const nA = 0.5 + 0.5*(Math.sin(ph)*0.55 + Math.sin(ph*2.37+1.3)*0.30 + Math.cos(ph*4.13+0.7)*0.15);
+        const nB = 0.5 + 0.5*(Math.cos(ph*1.41+0.9)*0.6 + Math.sin(ph*3.17+2.1)*0.4);
+        const crag = Math.sin(ph*3.7)*0.14;
+
+        // 7 titik profil melintang: mulai dari DALAM tepi jalan (half - 0.38) agar 100% menyatu dengan jalanan!
+        const prof = [
+          // 0: Kaki pasir/tanah di tepi aspal (menyatu langsung tanpa celah)
+          { off: half - 0.38, y: 0.022, col: cBase },
+          // 1: Gundukan pasir/tanah/salju yang menimbun kaki batu bagian dalam
+          { off: half + 0.02 + crag*0.35, y: 0.24 + 0.14*nB, col: tmpC.copy(cBase).lerp(cDrift, 0.55).clone() },
+          // 2: Dinding batu bagian dalam (mulai menonjol berfaset)
+          { off: half + 0.38 + crag*0.65, y: 0.58 + 0.24*nA, col: tmpC.copy(cRock1).lerp(cDrift, nB*(def.id==='pantai'?0.22:0.35)).clone() },
+          // 3: Puncak punggung bebatuan utama (tinggi ~0.64m..0.96m, nyambung utuh sepanjang trek)
+          { off: half + 0.88 + crag*0.80, y: 0.68 + 0.28*nA, col: tmpC.copy(cRock2).lerp(cCap, nA*(def.id==='pantai'?0.40:0.65)).clone() },
+          // 4: Bahu batu bagian luar
+          { off: half + 1.52 + crag*0.60, y: 0.52 + 0.22*nB, col: tmpC.copy(cRock1).lerp(cRock2, 0.5).clone() },
+          // 5: Lereng pasir/tanah/salju bagian luar
+          { off: half + 2.25 + crag*0.40, y: 0.20 + 0.12*nB, col: cDrift },
+          // 6: Kaki luar menyatu ke permukaan terrain
+          { off: half + 3.25, y: -0.36, col: cBase }
+        ];
+
+        for(let k=0; k<K; k++){
+          const pr = prof[k];
+          const d = side * pr.off;
+          v.push(px + nx*d, py + pr.y, pz + nz*d);
+          cols.push(pr.col.r, pr.col.g, pr.col.b);
+        }
+
+        const rowA = m * K, rowB = ((m+1)%M_STEPS) * K;
+        for(let k=0; k<K-1; k++){
+          const a = rowA+k, b = rowA+k+1, c = rowB+k, d = rowB+k+1;
+          if(side>0){
+            id.push(a,c,b, b,c,d);
+          } else {
+            id.push(a,b,c, b,d,c);
+          }
         }
       }
       g.setAttribute('position', new THREE.Float32BufferAttribute(v,3));
-      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
-      g.setIndex(id); g.computeVertexNormals();
-      const bMat = def.id==='pantai' ? new THREE.MeshLambertMaterial({map:sandTex(),color:0xe2ca8e})
-        : def.id==='hutan' ? new THREE.MeshLambertMaterial({map:pathTex(),color:0x786142})
-        : def.id==='kawah' ? new THREE.MeshLambertMaterial({map:pathTex(),color:0x38222a})
-        : new THREE.MeshLambertMaterial({map:snowTex(),color:0xeaf4ff});
-      group.add(new THREE.Mesh(g,bMat));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+      g.setIndex(id);
+      g.computeVertexNormals();
+      const ridgeMat = new THREE.MeshLambertMaterial({vertexColors:true, flatShading:true});
+      group.add(new THREE.Mesh(g, ridgeMat));
     }
-    naturalBerm(1); naturalBerm(-1);
+    continuousRockRidge(1);
+    continuousRockRidge(-1);
 
-    // Deretan bebatuan pembatas kecil + gundukan pasir/lumut/kerikil gunung/salju di tepi kiri & kanan
+    // Bongkahan batu memanjang yang SALING TUMPANG-TINDIH (interlocking boulders) + timbunan pasir/lumut/salju di kaki batu
     {
-      const rockPalette = def.id==='pantai' ? [0xb8a586,0xc9b796,0x9c8c72,0xd6c5a5]
-        : def.id==='hutan' ? [0x6e6a5f,0x58664e,0x7d7668,0x4d5c43]
-        : def.id==='kawah' ? [0x3d252e,0x2b1921,0x52313b,0x452a33]
-        : [0x889cb2,0x9eb2c7,0x73869c,0xb8d0e8];
-      const moundPalette = def.id==='pantai' ? [0xe8d399,0xdcc286,0xf0dea8]
-        : def.id==='hutan' ? [0x54723c,0x6e583b,0x466331]
-        : def.id==='kawah' ? [0x2e1b22,0x472931,0x382028]
+      const rockPalette = def.id==='pantai' ? [0xf2ede4,0xe0d9cc,0xd0c8ba,0xfaf8f2] // dikalikan tekstur basalt
+        : def.id==='hutan' ? [0x6e6a5f,0x55664b,0x7d7668,0x4c5e42]
+        : def.id==='kawah' ? [0x422831,0x2d1a22,0x57343e,0x38212a]
+        : [0x869ab0,0x9eb2c7,0x72859c,0xd8ecff];
+      const moundPalette = def.id==='pantai' ? [0xe8d398,0xdcc284,0xf0dea6]
+        : def.id==='hutan' ? [0x52703a,0x6e573a,0x456130]
+        : def.id==='kawah' ? [0x331e25,0x4a2a33,0x3d232b]
         : [0xf4f9ff,0xdceeff,0xe8f3ff];
 
       const rockSpots=[], moundSpots=[];
-      for(let i=0;i<N;i++){
-        const p=pts[i], n=normals[i], tg=tangents[i];
-        const h=Math.atan2(tg.x,tg.z);
+      const SUB_B = 2, NB = N * SUB_B; // 440 batu per sisi (jarak ~1.7m, panjang batu 2.5..3.4m -> 100% saling nyambung!)
+      for(let m=0; m<NB; m++){
+        const f = m / SUB_B, i0 = Math.floor(f)%N, i1 = (i0+1)%N, u = f - Math.floor(f);
+        const p0 = pts[i0], p1 = pts[i1], n0 = normals[i0], n1 = normals[i1], t0 = tangents[i0];
+        const px = p0.x + (p1.x-p0.x)*u, py = p0.y + (p1.y-p0.y)*u, pz = p0.z + (p1.z-p0.z)*u;
+        let nx = n0.x + (n1.x-n0.x)*u, nz = n0.z + (n1.z-n0.z)*u;
+        const nl = Math.hypot(nx,nz)||1; nx/=nl; nz/=nl;
+        const h = Math.atan2(t0.x,t0.z);
+
         [-1,1].forEach((side,si)=>{
-          const hSeed = Math.sin(i*12.9898 + si*78.233)*43758.5453;
+          const hSeed = Math.sin(m*12.9898 + si*78.233)*43758.5453;
           const r1 = hSeed - Math.floor(hSeed);
           const r2 = (hSeed*1.37) - Math.floor(hSeed*1.37);
-          const off = half + 0.88 + r1*0.42;
-          const along = (r2-0.5)*1.1;
-          const rx = p.x + n.x*side*off + tg.x*along;
-          const rz = p.z + n.z*side*off + tg.z*along;
-          // Ukuran batu pembatas KECIL / RENDAH (tinggi hanya ~0.26m..0.44m agar tidak tinggi)
-          const sx = 0.68 + r1*0.48;
-          const sy = 0.30 + r2*0.22;
-          const sz = 0.62 + r2*0.44;
-          rockSpots.push({x:rx, y:p.y+sy*0.48, z:rz, sx, sy, sz, ry:h+r1*3.14, c:rockPalette[(i+si)%rockPalette.length]});
-          // Gundukan pasir/lumut/kerikil/salju yang menyelimuti sela-sela batu pembatas
-          const mOff = half + 0.72 + r2*0.45;
-          const mx = p.x + n.x*side*mOff - tg.x*along*0.6;
-          const mz = p.z + n.z*side*mOff - tg.z*along*0.6;
-          moundSpots.push({x:mx, y:p.y+0.12, z:mz, sx:0.85+r2*0.45, sy:0.20+r1*0.12, sz:0.85+r1*0.45, ry:h+r2*2.0, c:moundPalette[(i+si)%moundPalette.length]});
+          // Posisi batu nempel langsung di bibir jalan (half + 0.55 .. half + 0.95)
+          const off = half + 0.58 + r1*0.36;
+          const rx = px + nx*side*off;
+          const rz = pz + nz*side*off;
+          // Panjang sz = 1.9..2.6 (diameter ~2.5..3.4m) sehingga antar batu saling menembus & nyambung tanpa celah!
+          // Tinggi sy = 0.55..0.88 (puncak ~0.62m..0.95m dari jalan)
+          const sx = 0.95 + r1*0.45;
+          const sy = 0.56 + r2*0.32;
+          const sz = 1.85 + r1*0.75;
+          rockSpots.push({x:rx, y:py+sy*0.52, z:rz, sx, sy, sz, ry:h+(r2-0.5)*0.45, c:rockPalette[(m+si)%rockPalette.length]});
+
+          // Timbunan pasir/tanah/salju yang menjorok dari atas tepi aspal (half - 0.05) menyelimuti kaki batu
+          const mOff = half + 0.18 + r2*0.35;
+          const mx = px + nx*side*mOff;
+          const mz = pz + nz*side*mOff;
+          moundSpots.push({x:mx, y:py+0.16, z:mz, sx:1.15+r2*0.50, sy:0.28+r1*0.16, sz:1.95+r1*0.65, ry:h+(r1-0.5)*0.35, c:moundPalette[(m+si)%moundPalette.length]});
         });
       }
-      const rockGeo = def.id==='kawah' ? new THREE.DodecahedronGeometry(0.68,0) : new THREE.DodecahedronGeometry(0.64,0);
-      const rockInst = new THREE.InstancedMesh(rockGeo, new THREE.MeshLambertMaterial({color:0xffffff}), rockSpots.length);
-      const moundInst = new THREE.InstancedMesh(new THREE.SphereGeometry(0.72,7,5), new THREE.MeshLambertMaterial({color:0xffffff}), moundSpots.length);
+      const rockGeo = new THREE.DodecahedronGeometry(0.68,0);
+      const rockMat = def.id==='pantai'
+        ? new THREE.MeshLambertMaterial({map:basaltSandTexture(), color:0xc4c4c4, flatShading:true})
+        : new THREE.MeshLambertMaterial({color:0xffffff, flatShading:true});
+      const rockInst = new THREE.InstancedMesh(rockGeo, rockMat, rockSpots.length);
+      const moundInst = new THREE.InstancedMesh(new THREE.SphereGeometry(0.75,7,5), new THREE.MeshLambertMaterial({color:0xffffff}), moundSpots.length);
       const mtx=new THREE.Matrix4(), q=new THREE.Quaternion(), eu=new THREE.Euler(), sc=new THREE.Vector3(), col=new THREE.Color();
       rockSpots.forEach((it,k)=>{
         eu.set(0,it.ry,0); q.setFromEuler(eu); sc.set(it.sx,it.sy,it.sz);
@@ -1354,8 +1453,9 @@
       const zf=d=>Math.max(0.35,Math.min(1.3,(d-half-10)/40)); // kecil dekat trek, besar jauh
       scatter(60,(x,z,md,d)=>{ const s=(0.8+R()*2)*zf(d); rocks.push({x,y:groundH(x,z)+1.0*s,z,s,ry:R()*3}); },{cluster:rockCl,avoid:placed});
       scatter(70,(x,z,md,d)=>{ const s=(0.8+R())*zf(d); bush.push({x,y:groundH(x,z)+1.2*s,z,s}); },{cluster:bushCl,avoid:placed});
-      fillInstanced(new THREE.DodecahedronGeometry(1.2,0), M(0x9a9a9a), rocks,
-        (it,k,c)=>c.setHex(0x9a9a9a).offsetHSL(0,0,((k*37)%11-5)*0.008));
+      fillInstanced(new THREE.DodecahedronGeometry(1.2,0), // pantai: batu vulkanik hitam berpasir seregam pembatas
+        new THREE.MeshLambertMaterial({map:basaltSandTexture(), color:0xd0d0d0}), rocks,
+        (it,k,c)=>c.setHex(0xf0ebe0).offsetHSL(0,0,((k*37)%11-5)*0.008));
       fillInstanced(new THREE.ConeGeometry(1.6,2.6,6), M(0x3e8e4d), bush,
         (it,k,c)=>c.setHex(0x3e8e4d).offsetHSL(((k*53)%11-5)*0.006,0,((k*29)%9-4)*0.01));
       // gundukan natural: 6 cluster tak beraturan, tiap 2-3 bola tumpang tindih

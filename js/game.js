@@ -51,9 +51,8 @@
     BK.Items.reset(scene,world);
 
     const names=['Kamu','Reggie','Coco','Dingo'];
-    // pemain pakai karakter pilihan; AI pakai sisanya + 1 acak (Juara hanya jika terbuka)
-    const keyOpen=BK.Save.hasBossKey();
-    const others=BK.Characters.map(c=>c.id).filter(id=>id!==sel.charId&&(!BK.charById(id).locked||keyOpen));
+    // pemain pakai karakter pilihan; AI pakai sisanya yang TIDAK TERKUNCI (Balnok/Krambil/Juara terbuka dulu)
+    const others=BK.Characters.filter(c=>c.id!==sel.charId&&BK.charOpen(c)).map(c=>c.id);
     while(others.length<3) others.push(others[Math.floor(Math.random()*others.length)]);
     const picks=[sel.charId, others[0], others[1], others[2]];
     racers=[];
@@ -153,6 +152,7 @@
   /* MODE JELAJAH: hub open-world mini */
   BK.hubOrigin=null;
   BK.startRoam=function(exitPortal){
+    if(!BK.Config.openworld) return; // katup mode open-world — setel openworld:true di config.js untuk hidupkan lagi
     sel=BK.getSelection();
     BK._entering=false; BK._portalTarget=null; BK._bossTarget=null; BK._garageTarget=null;
     if(BK.hidePortalPrompt)BK.hidePortalPrompt();
@@ -213,6 +213,7 @@
     }
   };
   BK.returnToHub=function(){
+    if(!BK.Config.openworld){ BK.openMenu&&BK.openMenu(); return; }
     if(BK._entering) return;
     BK._entering=true;
     const p=BK.hubOrigin;
@@ -231,7 +232,7 @@
     if(BK._entering) return;
     if(BK._portalTarget){ const p=BK._portalTarget; enterRaceFromHub(p); }
     else if(BK._bossTarget){ enterBossRace(); }
-    else if(BK._garageTarget){ BK.openMenu('roam'); }
+    else if(BK._garageTarget){ if(!BK.Config.openworld) return; BK.openMenu('roam'); }
   };
   // buka menu sebagai layar pengaturan/garasi (dari jeda, garasi pulau, atau hasil)
   BK.openMenu=function(originState){
@@ -258,7 +259,7 @@
       BK.show('hud'); BK.show('pause');
       document.getElementById('minimap').style.display='block';
       state='racing'; paused=true;
-    } else {
+    } else if(BK.Config.openworld){
       BK.startRoam();
     }
   };
@@ -419,7 +420,7 @@
     if(!c||!player||!player.mesh) return false;
     if(player.char&&player.char.id===c.id) return true;
     scene.remove(player.mesh);
-    const mesh=BK.buildSnail(c);
+    const mesh=BK.buildRig(c);
     mesh.position.copy(player.mesh.position); mesh.rotation.copy(player.mesh.rotation);
     scene.add(mesh); player.mesh=mesh; player._hat=null;
     player.char=c; player.stat=c.stat; player.baseScale=c.scale||1; player.blinkT=2;
@@ -430,12 +431,12 @@
   // Geser pilihan karakter (lewati yang terkunci), dari jeda
   BK.switchChar=function(d){
     if(!player||!player.char) return;
-    const list=BK.Characters, open=BK.Save.hasBossKey();
+    const list=BK.Characters;
     let i=list.findIndex(c=>c.id===player.char.id); if(i<0)i=0;
     for(let k=0;k<list.length;k++){
       i=(i+d+list.length)%list.length;
       const c=list[i];
-      if(c.locked&&!open){ continue; }
+      if(!BK.charOpen(c)){ continue; }
       if(BK.applyChar(c.id)){
         if(BK.syncCharUI)BK.syncCharUI(c.id);
         if(BK.refreshPauseChar)BK.refreshPauseChar();
@@ -645,9 +646,22 @@
         BK.Audio.trophy();
       }
     }
+    // karakter HD terbuka saat MAP TUNTAS (boleh kalah — yang penting tuntas): pantai→balnok, salju→krambil, kawah→juara
+    if(!BK.bossRace){
+      const cid={pantai:'balnok',salju:'krambil',kawah:'juara'}[world.def.id];
+      if(cid&&BK.Save.setCharOpen(cid)){
+        const ch=BK.charById(cid);
+        rows.push({note:'🔓 '+ch.icon+' '+ch.name+' TERBUKA — map '+world.def.name+' tuntas!',isPlayer:true});
+        BK.Audio.keyFanfare();
+      }
+    }
     if(BK.bossRace&&won&&!BK.Save.hasBossKey()){
       BK.Save.setBossKey();
-      rows.push({note:'🔑 KUNCI BOS DIDAPAT! Karakter Juara terbuka!',isPlayer:true});
+      if(BK.Save.setCharOpen('juara')){
+        rows.push({note:'🔑 KUNCI BOS DIDAPAT! Karakter Juara terbuka!',isPlayer:true});
+      } else {
+        rows.push({note:'🔑 KUNCI BOS DIDAPAT!',isPlayer:true});
+      }
       BK.Audio.keyFanfare();
       if(!BK.Save.finaleSeen()){
         BK.Save.setFinaleSeen();
@@ -750,7 +764,8 @@
     // di layar hasil balapan: Enter langsung lanjut ke pulau petualangan
     if(e.code==='Enter'&&state==='done'){
       keys.Enter=false;
-      BK.returnToHub();
+      if(BK.Config.openworld){ BK.returnToHub(); }
+      else { BK.openMenu&&BK.openMenu(); }
       return;
     }
     // di layar menu utama (setelah overlay klik awal tertutup): Enter langsung terjun ke pulau
@@ -759,9 +774,11 @@
       const hlp=document.getElementById('help');
       if((!ov||ov.classList.contains('hidden'))&&(!hlp||hlp.classList.contains('hidden'))){
         keys.Enter=false;
-        if(BK._menuOrigin==='roam'&&BK.closeMenuBack) BK.closeMenuBack();
-        else BK.startRoam();
-        return;
+        if(BK.Config.openworld){
+          if(BK._menuOrigin==='roam'&&BK.closeMenuBack) BK.closeMenuBack();
+          else BK.startRoam();
+          return;
+        }
       }
     }
     if(e.code==='KeyM'&&BK.Music){ const m=BK.Music.toggle(); BK.flashMsg(m?'MUSIK MATI':'MUSIK NYALA'); }

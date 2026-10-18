@@ -1,6 +1,55 @@
 /* Items: pickup box, misil, minyak, perisai, boost */
 (function(){
   const C=BK.Config.items;
+
+  // --- ASSET MISIL HD: roket lathe + sirip ekor + api boost; geometri/material dibagikan (satu piset untuk semua misil) ---
+  let _msA=null;
+  function missileAssets(){
+    if(_msA) return _msA;
+    // fuselage: ekor lurus → cincin pemandu → tonjolan baja abu; sumbu Y→Z dibakar (moncong +Z = arah terbang)
+    const prof=[[0.27,-0.30],[0.27,0.18],[0.235,0.30],[0.235,0.66],[0.285,0.72],[0.285,0.78],[0.235,0.84],[0.19,0.98],[0.17,1.02]]
+      .map(pt=>new THREE.Vector2(pt[0],pt[1]));
+    const bodyGeo=new THREE.LatheGeometry(prof,20); bodyGeo.rotateX(Math.PI/2);
+    // kepala peledak ogive merah
+    const nprof=[[0.17,0],[0.13,0.16],[0.09,0.34],[0.05,0.46],[0.005,0.53]].map(pt=>new THREE.Vector2(pt[0],pt[1]));
+    const noseGeo=new THREE.LatheGeometry(nprof,18); noseGeo.rotateX(Math.PI/2); noseGeo.translate(0,0,1.02);
+    // lonceng knalpot di belakang
+    const bellGeo=new THREE.CylinderGeometry(0.20,0.25,0.14,14); bellGeo.rotateX(Math.PI/2); bellGeo.translate(0,0,-0.37);
+    // semburan api boost additive (menyala sepanjang terbang) — depthWrite:false
+    const flameGeo=new THREE.ConeGeometry(0.14,0.60,10,1,true);
+    flameGeo.rotateX(Math.PI/2); flameGeo.rotateY(Math.PI); flameGeo.translate(0,0,-0.75);
+    // 4 sirip ekor jala-jala (trapesium menyapu ke belakang), diputar 90° sek-elap
+    const fs=new THREE.Shape();
+    fs.moveTo(0,0.20); fs.lineTo(0.42,0.20); fs.lineTo(0.30,0.48); fs.lineTo(0.10,0.48); fs.closePath();
+    const finBase=new THREE.ExtrudeGeometry(fs,{depth:0.02,bevelEnabled:false});
+    finBase.rotateY(Math.PI/2); finBase.translate(0,0,0.42);
+    const finGeo=[0,1,2,3].map(k=>finBase.clone().rotateZ(k*Math.PI/2));
+    // dua band merah peringatan
+    const bandAGeo=new THREE.TorusGeometry(0.252,0.016,6,20); bandAGeo.translate(0,0,0.30);
+    const bandBGeo=new THREE.TorusGeometry(0.212,0.014,6,20); bandBGeo.translate(0,0,0.90);
+    const bodyMat=new THREE.MeshPhongMaterial({color:0xaeb9c2,shininess:70,specular:0xdfe8ee});
+    const noseMat=new THREE.MeshPhongMaterial({color:0xd23c2e,shininess:80,specular:0xffe0d8});
+    const finMat=new THREE.MeshStandardMaterial({color:0x2e3238,roughness:0.55,metalness:0.5});
+    const bellMat=new THREE.MeshStandardMaterial({color:0x1f2226,roughness:0.6,metalness:0.5});
+    const bandMat=new THREE.MeshPhongMaterial({color:0xd23c2e,shininess:60,specular:0xff9999});
+    const flameMat=new THREE.MeshBasicMaterial({color:0xffa22e,transparent:true,opacity:0.75,
+      blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+    return _msA={bodyGeo,noseGeo,bellGeo,flameGeo,finGeo,bandAGeo,bandBGeo,
+      bodyMat,noseMat,finMat,bellMat,bandMat,flameMat};
+  }
+  function missileMesh(){
+    const A=missileAssets();
+    const g=new THREE.Group();
+    g.add(new THREE.Mesh(A.bodyGeo,A.bodyMat));
+    g.add(new THREE.Mesh(A.noseGeo,A.noseMat));
+    g.add(new THREE.Mesh(A.bellGeo,A.bellMat));
+    g.add(new THREE.Mesh(A.flameGeo,A.flameMat));
+    A.finGeo.forEach(fg=>g.add(new THREE.Mesh(fg,A.finMat)));
+    g.add(new THREE.Mesh(A.bandAGeo,A.bandMat));
+    g.add(new THREE.Mesh(A.bandBGeo,A.bandMat));
+    g.scale.setScalar(1.15);
+    return g;
+  }
   BK.Items = {
     list: [], oils: [], missiles: [],
     reset(scene, world){
@@ -74,9 +123,10 @@
         const gap=r.progress-kart.progress;
         if(gap>0&&gap<bd){bd=gap;best=r;}
       });
-      const g=new THREE.ConeGeometry(0.5,1.8,8);
-      const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff3333}));
-      m.rotation.x=Math.PI/2;
+      const m=missileMesh();
+      m.rotation.order='YZX'; // yaw mengikuti homing, roll berputar pada sumbu terbang
+      m.rotation.y=kart.heading;
+      m.rotation.z=Math.random()*Math.PI*2;
       const my=(kart.gy!=null?kart.gy:0)+1.0;
       m.position.set(kart.pos.x+Math.sin(kart.heading)*3,my,kart.pos.z+Math.cos(kart.heading)*3);
       this.scene.add(m);
@@ -112,6 +162,7 @@
         }
         mi.mesh.position.x+=Math.sin(mi.heading)*mi.speed*dt;
         mi.mesh.position.z+=Math.cos(mi.heading)*mi.speed*dt;
+        mi.mesh.rotation.y=mi.heading;   // dulu: model tak pernah berbelok (membawa arah lama saat homing melengkung)
         mi.mesh.rotation.z+=dt*8;
         const q=this.world.nearest(mi.mesh.position.x,mi.mesh.position.z,mi.lastIdx||0);
         mi.lastIdx=q.idx;

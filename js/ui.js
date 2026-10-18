@@ -5,7 +5,7 @@
 
   BK.getSelection=function(){
     const c=BK.charById(selChar);
-    if(c&&c.locked&&!BK.Save.hasBossKey()) selChar='turbo';
+    if(c&&c.locked&&!BK.Save.charOpen(c.id)) selChar='turbo';
     return {trackId:selTrack, diff:selDiff, charId:selChar};
   };
 
@@ -45,13 +45,13 @@
     let charIdx=Math.max(0,BK.Characters.findIndex(c=>c.id===selChar));
     const cards=[];
     BK.Characters.forEach((c,k)=>{
-      const locked=c.locked&&!BK.Save.hasBossKey();
+      const locked=c.locked&&!BK.Save.charOpen(c.id);
       const d=document.createElement('div');
       d.className='char-card'+(locked?' locked':'');
       d.innerHTML=locked
-        ? `<b>🔒 ???</b><span>Kalahkan Juara di Pintu Bos!</span>`
+        ? `<b>🔒 ${c.name}</b><span>${c.unlockDesc}</span>`
         : `<b>${c.name}</b><span>${c.desc}</span>`;
-      d.onclick=()=>{ if(locked){ BK.flashMsg('🔒 Kalahkan Juara dulu!'); BK.Audio.hit(); } else setChar(k); };
+      d.onclick=()=>{ if(locked){ BK.flashMsg('🔒 '+c.unlockDesc); BK.Audio.hit(); } else setChar(k); };
       cl.appendChild(d); cards.push(d);
       const dot=document.createElement('i');
       dot.onclick=()=>{ if(!locked) setChar(k); }; dotsBox.appendChild(dot);
@@ -130,12 +130,21 @@
     $('btn-restart').onclick=()=>BK.restartSlot&&BK.restartSlot();
     $('btn-menu').onclick=()=>BK.openMenu&&BK.openMenu('done');
     const bback2=$('btn-back2'); if(bback2)bback2.onclick=()=>{ if(BK.closeMenuBack)BK.closeMenuBack(); };
-    const bhub=$('btn-hub'); if(bhub)bhub.onclick=()=>BK.returnToHub&&BK.returnToHub();
-    const broam=$('btn-roam'); if(broam)broam.onclick=()=>{
-      BK.Audio.unlock();
-      if(BK._menuOrigin==='roam'&&BK.closeMenuBack) BK.closeMenuBack();
-      else if(BK.startRoam) BK.startRoam();
-    };
+    const bhub=$('btn-hub');
+    if(bhub){
+      bhub.onclick=()=>{ if(!BK.Config.openworld) return; BK.returnToHub&&BK.returnToHub(); };
+      if(!BK.Config.openworld){ bhub.classList.add('hidden'); bhub.disabled=true; }
+    }
+    const broam=$('btn-roam');
+    if(broam){
+      broam.onclick=()=>{
+        BK.Audio.unlock();
+        if(!BK.Config.openworld) return; // katup open-world (config.js)
+        if(BK._menuOrigin==='roam'&&BK.closeMenuBack) BK.closeMenuBack();
+        else if(BK.startRoam) BK.startRoam();
+      };
+      if(!BK.Config.openworld){ broam.classList.add('hidden'); broam.disabled=true; }
+    }
     // sentuh
     const bind=(id,down,up)=>{
       const el=$(id);
@@ -206,7 +215,7 @@
     if(nameEl) nameEl.textContent=c.icon+' '+c.name;
     if(!pv) return;
     if(pv.snail) pv.scene.remove(pv.snail);
-    pv.snail=BK.buildSnail(c);
+    pv.snail=BK.buildRig(c);
     pv.scene.add(pv.snail);
   };
   BK.tickPreview=function(dt){
@@ -366,7 +375,7 @@
       box.appendChild(d);
     });
     if(isRecord){ const d=document.createElement('div'); d.className='rrow me'; d.innerHTML='<span>⭐ Rekor lap tercepat baru!</span><span></span>'; box.appendChild(d); }
-    const bh=$('btn-hub'); if(bh) bh.classList.remove('hidden');
+    const bh=$('btn-hub'); if(bh) bh.classList.toggle('hidden', !BK.Config.openworld);
     BK.show('result');
     playerWon?BK.Audio.win():BK.Audio.lose();
   };

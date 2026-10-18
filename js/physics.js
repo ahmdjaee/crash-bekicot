@@ -494,15 +494,20 @@
         w.pivot.rotation.y = Math.max(-0.58, Math.min(0.58, fSteer));
       }
     });
-    // api boost
-    const fl = boosting||k.chargeLv>0&&k.drifting;
-    u.flame.material.opacity += ((fl?0.9:0)-u.flame.material.opacity)*Math.min(1,10*dt);
-    const s=boosting?1+Math.random()*0.4:0.7;
-    u.flame.scale.set(s,s,s);
-    u.flame.material.color.setHex(k.chargeLv===3?0xc26bff:k.chargeLv===2?0xff9f1c:k.chargeLv===1?0x3fb6ff:0x33aaff);
+    // api boost (rig lama saja; kart tanpa flame dilewati)
+    if(u.flame){
+      const fl = boosting||k.chargeLv>0&&k.drifting;
+      u.flame.material.opacity += ((fl?0.9:0)-u.flame.material.opacity)*Math.min(1,10*dt);
+      const s=boosting?1+Math.random()*0.4:0.7;
+      u.flame.scale.set(s,s,s);
+      u.flame.material.color.setHex(k.chargeLv===3?0xc26bff:k.chargeLv===2?0xff9f1c:k.chargeLv===1?0x3fb6ff:0x33aaff);
+    }
     // perisai
-    u.shield.material.opacity += ((k.shieldTime>0?0.28:0)-u.shield.material.opacity)*Math.min(1,8*dt);
+    if(u.shield){
+      u.shield.material.opacity += ((k.shieldTime>0?0.28:0)-u.shield.material.opacity)*Math.min(1,8*dt);
+    }
     if(k.shieldTime>0)k.shieldTime-=dt;
+    if(u.tick)u.tick(time,dt,boosting,inp.steer||0,k.speed||0); // rig kustom: getar knalpot, setir, partikel api
     // bekicot hidup: kedip + tangkai bergoyang + squash & stretch (termasuk saat lompat & mendarat)
     if(u.eyes){
       k.blinkT-=dt;

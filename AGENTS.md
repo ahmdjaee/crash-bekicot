@@ -41,7 +41,7 @@ Contoh patuh: item box (roulette+pecah), pad (boost), dinding (thud), es/pasir (
 pohon via collider, NPC (dialog + dorongan lembut), kolam (cipratan + lambat).
 
 ## 5. Lainnya
-- Offline penuh: tanpa CDN/fetch/aset luar. Tekstur hanya kanvas prosedural 128px.
+- Offline penuh: tanpa CDN/fetch/aset luar. Tekstur hanya kanvas prosedural, maksimal 512px.
 - Anti-pusing: tanpa getar layar kecuali misil/minyak/jeduk keras; partikel kecil & singkat; ada knob `smoke`/`effects` di `config.js`.
 - Verifikasi tiap perubahan: `node --check`, sim headless (AI finish semua trek), screenshot bila visual.
 - Naikkan `?v=` di `index.html` untuk tiap file JS/CSS yang diubah.
