@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Crash Bekicot – Game Balap Kart 3D Gratis di Browser</title>
+<meta name="description" content="Main Crash Bekicot gratis di browser: game balap kart 3D buatan Indonesia. Drift, misil, mode cerita Pulau Bekicot, 4 trek & 8 pembalap. Tanpa unduh.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://crash-bekicot.vercel.app/">
+<meta name="theme-color" content="#0b1020">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Crash Bekicot">
+<meta name="author" content="ahmdjaee">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Crash Bekicot">
+<meta property="og:locale" content="id_ID">
+<meta property="og:url" content="https://crash-bekicot.vercel.app/">
+<meta property="og:title" content="Crash Bekicot – Game Balap Kart 3D Gratis di Browser">
+<meta property="og:description" content="Balap kart 3D di Pulau Bekicot: drift, misil, dan mode cerita. Main langsung di browser, tanpa unduh.">
+<meta property="og:image" content="https://crash-bekicot.vercel.app/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bekicot pembalap di garis start trek Pantai Bekicot">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Crash Bekicot – Game Balap Kart 3D Gratis di Browser">
+<meta name="twitter:description" content="Balap kart 3D di Pulau Bekicot: drift, misil, dan mode cerita. Main langsung di browser, tanpa unduh.">
+<meta name="twitter:image" content="https://crash-bekicot.vercel.app/og-image.jpg">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://crash-bekicot.vercel.app/#website",
+      "url": "https://crash-bekicot.vercel.app/",
+      "name": "Crash Bekicot",
+      "inLanguage": "id-ID"
+    },
+    {
+      "@type": ["VideoGame", "WebApplication"],
+      "@id": "https://crash-bekicot.vercel.app/#game",
+      "name": "Crash Bekicot",
+      "url": "https://crash-bekicot.vercel.app/",
+      "description": "Game balap kart 3D gratis di browser. Bekicot pembalap berlomba di Pulau Bekicot dengan drift, item misil dan minyak, serta mode cerita empat bab.",
+      "image": "https://crash-bekicot.vercel.app/og-image.jpg",
+      "inLanguage": "id-ID",
+      "genre": ["Balap kart", "Racing", "Arcade"],
+      "gamePlatform": ["Web browser", "PC", "Mobile"],
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Windows, macOS, Linux, Android, iOS (browser dengan WebGL)",
+      "playMode": "SinglePlayer",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" },
+      "author": { "@type": "Person", "name": "ahmdjaee", "url": "https://github.com/ahmdjaee" },
+      "isPartOf": { "@id": "https://crash-bekicot.vercel.app/#website" }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="style.css?v=50">
+</head>
+<body>
+<noscript>
+  <div class="noscript">
+    <h1>Crash Bekicot – Game Balap Kart 3D Gratis di Browser</h1>
+    <p>Crash Bekicot butuh JavaScript dan WebGL. Aktifkan JavaScript lalu muat ulang halaman untuk bermain.</p>
+    <p>Game balap kart 3D buatan Indonesia: drift, misil, minyak, perisai, mode cerita Pulau Bekicot, empat trek (Pantai Bekicot, Rimba Jamur, Kawah Panas, Puncak Salju) dan delapan pembalap bekicot.</p>
+  </div>
+</noscript>
+<div id="game-wrap">
+  <canvas id="game" aria-label="Arena balap 3D Crash Bekicot"></canvas>
+  <canvas id="minimap" width="170" height="170"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="hud-top">
+      <div id="hud-lap">LAP 1/3</div>
+      <div id="hud-pos">4th</div>
+      <div id="hud-time">0:00.0</div>
+    </div>
+    <div id="hud-sub"></div>
+    <div id="hud-item"><span id="hud-item-icon">?</span><small id="hud-item-key">E: pakai</small></div>
+    <div id="pause-hint">Esc: Jeda</div>
+    <div id="boost-meter"><div id="boost-fill"></div><span id="boost-label">DRIFT</span></div>
+    <div id="hud-msg"></div>
+    <div id="wrongway" class="hidden">↩ SALAH ARAH!<small>PUTAR BALIK!</small></div>
+    <button id="t-pause" class="touch-only" aria-label="Jeda">⏸</button>
+    <div id="touch-controls">
+      <div class="touch-left" id="t-steer">
+        <button id="t-left" aria-label="Setir kiri">◀</button>
+        <button id="t-right" aria-label="Setir kanan">▶</button>
+      </div>
+      <div class="touch-right">
+        <button id="t-item">ITEM</button>
+        <button id="t-brake">REM</button>
+        <button id="t-drift">DRIFT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="countdown" class="hidden">3</div>
+  <div id="portal-prompt" class="hidden"></div>
+  <div id="letterbox" class="off"><i></i><i></i></div>
+  <div id="adv-dialog" class="hidden">
+    <div class="dialog-card">
+      <div class="dialog-avatar" id="dlg-avatar"></div>
+      <div class="dialog-body">
+        <div class="dialog-speaker" id="dlg-speaker"></div>
+        <div class="dialog-text" id="dlg-text"></div>
+      </div>
+      <button id="dlg-next" class="small">Lanjut ▶</button>
+    </div>
+    <div class="dialog-hints"><span id="dlg-progress"></span><button id="dlg-skip" type="button">Lewati adegan <span class="no-touch">(Esc)</span> ⏭</button></div>
+  </div>
+  <div id="title-card" class="hidden"><div class="tc-kicker" id="tc-kicker"></div><div class="tc-title" id="tc-title"></div><div class="tc-sub" id="tc-sub"></div></div>
+  <div id="speech" class="hidden"><div class="sp-avatar" id="sp-avatar"></div><div><b id="sp-name"></b><span id="sp-text"></span></div></div>
+  <div id="objective" class="hidden"><small id="obj-chapter"></small><span id="obj-text"></span></div>
+  <div id="race-banner" class="hidden"><small id="rb-kicker"></small><span id="rb-title"></span></div>
+  <div id="lap-banner" class="hidden"></div>
+  <div id="journal" class="screen hidden">
+    <div class="shrine-card journal-card">
+      <h2>📖 JURNAL PETUALANGAN</h2>
+      <div id="journal-story" class="journal-list"></div>
+      <h3>Catatan Tetua <small id="journal-count"></small></h3>
+      <div id="journal-lore" class="journal-lore"></div>
+      <button id="btn-journal-close">← Tutup <span class="no-touch">(Esc)</span></button>
+    </div>
+  </div>
+  <div id="credits" class="hidden"><div id="credits-roll"></div><small class="credits-hint">Enter untuk lewati</small></div>
+  <div id="shrine-modal" class="screen hidden">
+    <div class="shrine-card">
+      <h2>📊 KUIL STATUS PETUALANGAN</h2>
+      <div id="shrine-summary" class="shrine-summary"></div>
+      <div id="shrine-tracks" class="shrine-tracks"></div>
+      <div id="shrine-shop" class="shrine-shop"></div>
+      <button id="btn-shrine-close">← Kembali ke Pulau <span class="no-touch">(Esc / Enter)</span></button>
+    </div>
+  </div>
+  <div id="confetti" class="hidden"></div>
+  <div id="fade"></div>
+
+  <div id="menu" class="screen">
+    <div class="menu-split">
+      <div class="menu-hero">
+        <canvas id="char-preview" width="320" height="340"></canvas>
+        <div id="char-stats"></div>
+      </div>
+      <button id="btn-sound" class="icon-btn" type="button" aria-label="Matikan musik" title="Musik (M)">🔊</button>
+      <div class="menu-panel">
+        <h1 class="menu-logo"><span aria-hidden="true">🐌 </span>CRASH BEKICOT</h1>
+        <div id="mode-list" class="mode-tabs">
+          <button data-mode="adventure" class="active">🗺️ CERITA<small>Pulau Bekicot</small></button>
+          <button data-mode="arcade">🏁 BALAP CEPAT<small>Pilih trek langsung</small></button>
+        </div>
+        <div class="carousel" id="char-carousel">
+          <button class="car-arrow" id="char-prev">◀</button>
+          <div class="car-view" id="char-view"><div class="car-track" id="char-list"></div></div>
+          <button class="car-arrow" id="char-next">▶</button>
+        </div>
+        <div class="car-dots" id="char-dots"></div>
+        <div id="adventure-card" class="adventure-card">
+          <div class="adv-header" id="adv-chapter">🏝️ <b>PULAU BEKICOT</b></div>
+          <p class="adv-desc" id="adv-objective">Pilih pembalap dan tingkat kesulitanmu, lalu mulai ceritanya.</p>
+          <div class="row small" id="hub-stats"></div>
+          <button id="btn-new-story" class="link-btn hidden" type="button">↺ Mulai ulang cerita</button>
+        </div>
+        <div class="tracks hidden" id="track-list"></div>
+        <div id="diff-list">
+          <button data-diff="easy">Santai</button>
+          <button data-diff="normal" class="active">Seru</button>
+          <button data-diff="hard">Ngamuk</button>
+        </div>
+        <button id="btn-roam">🗺️ MULAI CERITA <span class="no-touch">(ENTER)</span></button>
+        <button id="btn-start" class="hidden">🏁 MULAI BALAPAN <span class="no-touch">(ENTER)</span></button>
+        <button id="btn-back2" class="ghost hidden">← Kembali</button>
+        <button id="btn-help" class="ghost small">❓ Cara main</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="help" class="screen hidden">
+    <h2>Cara Main</h2>
+    <ul>
+      <li>🗺️ <b>Cerita:</b> ikuti <b>panah emas</b> di atas kartmu ke portal bab berikutnya. Juara 1 merebut Piala dan membuka bab selanjutnya; empat Piala membuka <b>Gerbang Utara</b>.</li>
+      <li class="touch-only">📱 <b>Layar sentuh:</b> gas otomatis. Tahan <b>◀ ▶</b> untuk setir (jempol bisa digeser tanpa diangkat), tahan <b>DRIFT</b> sambil belok lalu lepas untuk boost, <b>ITEM</b> pakai item, <b>REM</b> rem/mundur, <b>⏸</b> jeda. Ketuk kotak dialog untuk lanjut.</li>
+      <li>⌨️ <b>Kontrol:</b> ← → setir, ↑ gas, ↓ rem, <b>Spasi</b> drift, <b>E</b> pakai item, <b>Esc</b> jeda. Saat adegan: <b>Enter</b> lanjut, <b>Esc</b> lewati.</li>
+      <li>🏁 <b>Start boost:</b> mulai tekan gas tepat saat angka <b>1</b>. Terlalu awal, mesinmu banjir.</li>
+      <li>💨 <b>Drift:</b> sambil belok, tahan Spasi lalu setir balik agar lebih cepat panas: <span class="blue">biru</span> → <span class="orange">oranye</span> → <span class="purple">ungu</span>. Lepas Spasi untuk boost.</li>
+      <li>🚀 <b>Air Trick:</b> saat melayang dari ramp, tekan Spasi untuk putaran dan boost mendarat.</li>
+      <li>📦 <b>Item:</b> kotak biru memberi Boost, Misil, Minyak, atau Perisai. Perisai menahan satu serangan.</li>
+      <li>🔤 <b>Setelah Piala:</b> tiap portal membuka <b>Token B-K-T</b> (kumpulkan 3 huruf + juara 1) dan <b>Relik Waktu</b> (pecahkan kotak waktu, kejar target). Keduanya membuka halaman Jurnal.</li>
+      <li>🏠 <b>Di pulau:</b> Garasi untuk ganti pembalap, Kuil Status untuk rekor dan toko, dekati warga untuk mengobrol.</li>
+    </ul>
+    <section class="help-about" aria-labelledby="about-title">
+      <h3 id="about-title">Tentang Crash Bekicot</h3>
+      <p>Crash Bekicot adalah game balap kart 3D gratis yang bisa dimainkan langsung di browser komputer maupun HP, tanpa unduh dan tanpa daftar. Pilih bekicot pembalapmu, kumpulkan item, kuasai drift, lalu rebut empat Piala untuk menyelamatkan Pulau Bekicot.</p>
+      <h3>Trek balap</h3>
+      <p>🏖️ Pantai Bekicot · 🍄 Rimba Jamur · 🌋 Kawah Panas · ❄️ Puncak Salju · 👑 Mahkota Kawah (balapan bos)</p>
+      <h3>Pembalap</h3>
+      <p>🔥 Turbo · 🛡️ Cangkang Besi · 👻 Siput Hantu · 🍄 Ratu Spora · 🌋 Jenderal Bara · 🏁 Balnok · 🥥 Krambil · 👑 Juara</p>
+      <h3>Mode permainan</h3>
+      <p><b>Cerita</b>: jelajahi Pulau Bekicot, tantang empat panglima, dan pulihkan Permata Agung. <b>Balap Cepat</b>: langsung pilih trek dan tingkat kesulitan (Santai, Seru, Ngamuk).</p>
+    </section>
+    <button id="btn-back">← Kembali</button>
+  </div>
+
+  <div id="pause" class="screen hidden">
+    <h2>JEDA</h2>
+    <button id="btn-resume">▶ Lanjut</button>
+    <div class="row small"><button id="btn-char-prev" class="ghost">◀</button><span id="pause-char">🐌</span><button id="btn-char-next" class="ghost">▶</button></div>
+    <button id="btn-journal" class="ghost">📖 Jurnal <span class="no-touch">(J)</span></button>
+    <button id="btn-restart2" class="ghost">↻ Ulangi</button>
+    <button id="btn-quit" class="ghost">🏠 Garasi / Menu</button>
+  </div>
+
+  <div id="result" class="screen hidden">
+    <h2 id="result-title">FINISH!</h2>
+    <div id="result-rows"></div>
+    <button id="btn-hub">Lanjut ▶ <span class="no-touch">(Enter)</span></button>
+    <button id="btn-restart" class="ghost">↻ Balapan lagi <span class="no-touch">(R)</span></button>
+    <button id="btn-menu" class="ghost">🏝️ Kembali ke Pulau</button>
+  </div>
+
+  <div id="loading" class="screen hidden"><h2>Memuat…</h2></div>
+  <div id="rotate-hint" aria-live="polite"><div class="rot-phone"></div><b>Putar HP ke mode landscape</b><small>Crash Bekicot paling enak dimainkan dengan layar mendatar.</small></div>
+</div>
+<script src="libs/three.min.js"></script>
+<script src="libs/howler.min.js?v=1"></script>
+<script src="js/config.js?v=40"></script>
+<script src="assets/audio/music/music-config.js?v=2"></script>
+<script src="js/save.js?v=37"></script>
+<script src="js/audio.js?v=28"></script>
+<script src="js/music.js?v=7"></script>
+<script src="js/tracks.js?v=50"></script>
+<script src="js/terrain.js?v=3"></script>
+<script src="js/props.js?v=13"></script>
+<script src="js/world.js?v=81"></script>
+<script src="js/hub.js?v=26"></script>
+<script src="js/physics.js?v=69"></script>
+<script src="js/chars.js?v=56"></script>
+<script src="js/ai.js?v=38"></script>
+<script src="js/items.js?v=32"></script>
+<script src="js/particles.js?v=23"></script>
+<script src="js/camera.js?v=35"></script>
+<script src="js/story.js?v=4"></script>
+<script src="js/cutscene.js?v=3"></script>
+<script src="js/ui.js?v=54"></script>
+<script src="js/game.js?v=78"></script>
+</body>
+</html>
